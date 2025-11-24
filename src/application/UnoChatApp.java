@@ -31,14 +31,14 @@ import java.net.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
+import com.dosse.upnp.UPnP;
 public class UnoChatApp extends Application {
     // --- UNO PALETTE ---
     private final Color UNO_RED = Color.web("#D72600");
     private final Color UNO_YELLOW = Color.web("#F9C700");
     private final Color UNO_GREEN = Color.web("#379711");
     private final Color UNO_BLUE = Color.web("#0956BF");
-
+    private Label publicIpLabel;
     // --- TRẠNG THÁI ---
     private String username;
     private String myLanIP;
@@ -155,8 +155,12 @@ public class UnoChatApp extends Application {
     
     @Override
     public void stop() {
-        if (activeVirtualHost != null) activeVirtualHost.stop();
-        if (connectionToServer != null) try { connectionToServer.socket.close(); } catch(Exception e){}
+    	if (activeVirtualHost != null) {
+            activeVirtualHost.stop();
+            // Xóa port mapping trên router để dọn dẹp
+            new Thread(() -> UPnP.closePortTCP(activeVirtualHost.port)).start();
+        }
+    	if (connectionToServer != null) try { connectionToServer.socket.close(); } catch(Exception e){}
     }
 
     // =================================================================
@@ -479,16 +483,23 @@ public class UnoChatApp extends Application {
         nameLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
         nameLbl.setTextFill(Color.WHITE);
         
-        Label ipLbl = new Label("IP Của Bạn: " + myLanIP);
+        // LAN IP (IP Nội bộ)
+        Label ipLbl = new Label("LAN IP: " + myLanIP);
         ipLbl.setStyle("-fx-background-color: rgba(0,0,0,0.2); -fx-padding: 3 8 3 8; -fx-background-radius: 10;");
         ipLbl.setTextFill(Color.WHITE);
         ipLbl.setFont(Font.font("Monospaced", FontWeight.BOLD, 12));
 
-        info.getChildren().addAll(nameLbl, ipLbl);
+        // PUBLIC IP (IP Internet - Thêm mới)
+        publicIpLabel = new Label("Public IP: Đang check...");
+        publicIpLabel.setStyle("-fx-background-color: rgba(55, 151, 17, 0.8); -fx-padding: 3 8 3 8; -fx-background-radius: 10;"); // Màu xanh lá
+        publicIpLabel.setTextFill(Color.WHITE);
+        publicIpLabel.setFont(Font.font("Monospaced", FontWeight.BOLD, 12));
+        publicIpLabel.setVisible(false); // Ẩn đi khi chưa tạo phòng
+
+        info.getChildren().addAll(nameLbl, ipLbl, publicIpLabel);
         header.getChildren().addAll(avatarStack, info);
         return header;
     }
-
     private String toHex(Color c) {
         return String.format("#%02X%02X%02X", (int) (c.getRed() * 255), (int) (c.getGreen() * 255), (int) (c.getBlue() * 255));
     }
@@ -558,18 +569,52 @@ public class UnoChatApp extends Application {
             if (activeVirtualHost != null) activeVirtualHost.stop();
             activeVirtualHost = new VirtualHost(groupName, port);
             new Thread(activeVirtualHost).start();
+            
+            // --- LOGIC UPNP MỚI ---
+            // Chạy trong Thread riêng vì UPnP check mất 1-2 giây
+            new Thread(() -> {
+                Platform.runLater(() -> {
+                    publicIpLabel.setText("Đang mở Port " + port + "...");
+                    publicIpLabel.setVisible(true);
+                });
+
+                if (UPnP.isUPnPAvailable()) {
+                    if (UPnP.isMappedTCP(port)) {
+                        System.out.println("Port " + port + " đã được map trước đó.");
+                    } else if (UPnP.openPortTCP(port)) {
+                        System.out.println("Đã mở Port " + port + " thành công qua UPnP!");
+                    } else {
+                        System.out.println("Không thể mở Port (có thể Router tắt UPnP).");
+                    }
+                    
+                    String externalIP = UPnP.getExternalIP();
+                    Platform.runLater(() -> {
+                        publicIpLabel.setText("Public IP: " + externalIP + ":" + port);
+                        showAlert("Đã Public lên Internet!\nBạn bè hãy nhập: " + externalIP + ":" + port);
+                    });
+                } else {
+                    Platform.runLater(() -> publicIpLabel.setText("UPnP: Không hỗ trợ"));
+                }
+            }).start();
+            // ----------------------
         }
+        
         new Thread(() -> {
-            try { Thread.sleep(200); } catch (InterruptedException e) {}
+            try { Thread.sleep(1000); } catch (InterruptedException e) {}
             Platform.runLater(() -> connectToGroup(groupName, "127.0.0.1", port));
         }).start();
     }
 
     private void connectToGroup(String defaultName, String ip, int port) {
+    	if (connectionToServer != null && connectionToServer.socket != null && !connectionToServer.socket.isClosed()) {
+            try { 
+                connectionToServer.socket.close(); // Ngắt socket cũ ngay lập tức
+            } catch (IOException e) {}
+        }
         new Thread(() -> {
             try {
                 Socket socket = new Socket();
-                socket.connect(new InetSocketAddress(ip, port), 3000);
+                socket.connect(new InetSocketAddress(ip, port), 10000);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
@@ -583,10 +628,11 @@ public class UnoChatApp extends Application {
                     setupChatRoomUI(realGroupName, ip, port);
                 });
 
-                connectionToServer = new PeerConnection("SERVER", socket, out);
+                connectionToServer = new PeerConnection("Virtual client", socket, out);
                 String line;
                 while ((line = in.readLine()) != null) processIncomingMessage(line);
-            } catch (Exception e) {  }
+            } catch (Exception e) {  
+            }
         }).start();
     }
 
@@ -648,8 +694,10 @@ public class UnoChatApp extends Application {
                     InetAddress addr = addresses.nextElement();
                     if (addr instanceof Inet4Address) {
                         String ip = addr.getHostAddress();
-                        if (ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) return ip;
-                    }
+                     // Thêm điều kiện: || ip.startsWith("26.")
+                        if (ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.") || ip.startsWith("26.")) {
+                            return ip; // Trả về ngay khi thấy IP Radmin hoặc LAN
+                        }                    }
                 }
             }
         } catch (Exception e) {}
