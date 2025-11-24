@@ -1,7 +1,6 @@
 package coreapp.view;
 
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -42,7 +41,7 @@ public class RegistrationView extends BaseFrame {
     /**
      * The toaster object for displaying notifications.
      */
-    private final Toaster toaster;
+    private Toaster toaster;
 
     /**
      * The main Pane of the registration page.
@@ -72,7 +71,6 @@ public class RegistrationView extends BaseFrame {
      */
     public RegistrationView() {
         super(WindowConstants.REGISTRATION_WINDOW_TITLE);
-        this.toaster = new Toaster(); // You'll need to adapt Toaster for JavaFX
         initializeFrame();
     }
 
@@ -87,7 +85,7 @@ public class RegistrationView extends BaseFrame {
     @Override
     public void initializeFrame() {
         mainPane = getMainPane();
-
+        this.toaster = new Toaster(mainPane);
         addLogo();
         addRegistrationText();
         addSeparator();
@@ -116,36 +114,29 @@ public class RegistrationView extends BaseFrame {
      */
     private Pane getMainPane() {
         Pane pane = new Pane();
-
         pane.setPrefSize(WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
         pane.setStyle("-fx-background-color: linear-gradient(to bottom right, #667eea, #764ba2);");
-
-        // Make window draggable
         pane.setOnMousePressed(event -> {
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
         });
-
         pane.setOnMouseDragged(event -> {
             this.setX(event.getScreenX() - xOffset);
             this.setY(event.getScreenY() - yOffset);
         });
-
         this.setOnCloseRequest(event -> {
             Platform.exit();
             System.exit(0);
         });
-
         return pane;
     }
-
     /**
      * Adds the registration text label to the registration page.
      */
     private void addRegistrationText() {
         Label registrationLabel = new Label(UITexts.REGISTRATION_PAGE_TEXT);
         registrationLabel.setFont(Font.font(UIFonts.FONT_GENERAL_UI.getFamily(), UIFonts.FONT_GENERAL_UI.getSize()));
-        registrationLabel.setTextFill(UIColors.OFFWHITE);
+        registrationLabel.setTextFill(UIColors.OFFWHITE_FX);
         registrationLabel.setAlignment(Pos.CENTER);
         registrationLabel.setLayoutX(670);
         registrationLabel.setLayoutY(155);
@@ -162,7 +153,7 @@ public class RegistrationView extends BaseFrame {
         separator.setStartY(154);
         separator.setEndX(640);
         separator.setEndY(494);
-        separator.setStroke(UIColors.COLOR_OUTLINE);
+        separator.setStroke(UIColors.COLOR_OUTLINE_FX);
         mainPane.getChildren().add(separator);
     }
 
@@ -220,20 +211,20 @@ public class RegistrationView extends BaseFrame {
                 if (emailField.getText().equals(UITexts.PLACEHOLDER_TEXT_EMAIL)) {
                     emailField.setText(UITexts.STRING_EMPTY);
                 }
-                emailField.setTextFill(UIColors.OFFBLACK);
-                emailField.setBorderColor(UIColors.COLOR_INTERACTIVE);
+                emailField.setStyle("-fx-text-fill: " + toHexString(UIColors.OFFBLACK_FX) + ";");
+                emailField.setBorderColor(UIColors.COLOR_INTERACTIVE_FX);
             } else {
                 if (emailField.getText().isEmpty()) {
                     emailField.setText(UITexts.PLACEHOLDER_TEXT_EMAIL);
                 }
-                emailField.setTextFill(UIColors.COLOR_OUTLINE);
-                emailField.setBorderColor(UIColors.COLOR_OUTLINE);
+                emailField.setStyle("-fx-text-fill: " + toHexString(UIColors.COLOR_OUTLINE_FX) + ";");
+                emailField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
             }
         });
 
-        emailField.setTextFill(UIColors.COLOR_OUTLINE);
+        emailField.setStyle("-fx-text-fill: " + toHexString(UIColors.COLOR_OUTLINE_FX) + ";");
         emailField.setText(UITexts.PLACEHOLDER_TEXT_EMAIL);
-        emailField.setBorderColor(UIColors.COLOR_OUTLINE);
+        emailField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
 
         mainPane.getChildren().add(emailField);
 
@@ -255,20 +246,20 @@ public class RegistrationView extends BaseFrame {
                 if (usernameField.getText().equals(UITexts.PLACEHOLDER_TEXT_USERNAME)) {
                     usernameField.setText(UITexts.STRING_EMPTY);
                 }
-                usernameField.setTextFill(UIColors.OFFBLACK);
-                usernameField.setBorderColor(UIColors.COLOR_INTERACTIVE);
+                usernameField.setStyle("-fx-text-fill: " + toHexString(UIColors.OFFBLACK_FX) + ";");
+                usernameField.setBorderColor(UIColors.COLOR_INTERACTIVE_FX);
             } else {
                 if (usernameField.getText().isEmpty()) {
                     usernameField.setText(UITexts.PLACEHOLDER_TEXT_USERNAME);
                 }
-                usernameField.setTextFill(UIColors.COLOR_OUTLINE);
-                usernameField.setBorderColor(UIColors.COLOR_OUTLINE);
+                usernameField.setStyle("-fx-text-fill: " + toHexString(UIColors.COLOR_OUTLINE_FX) + ";");
+                usernameField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
             }
         });
 
-        usernameField.setTextFill(UIColors.COLOR_OUTLINE);
+        usernameField.setStyle("-fx-text-fill: " + toHexString(UIColors.COLOR_OUTLINE_FX) + ";");
         usernameField.setText(UITexts.PLACEHOLDER_TEXT_USERNAME);
-        usernameField.setBorderColor(UIColors.COLOR_OUTLINE);
+        usernameField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
 
         mainPane.getChildren().add(usernameField);
 
@@ -291,16 +282,16 @@ public class RegistrationView extends BaseFrame {
                 if (passwordField.getText().equals(UITexts.PLACEHOLDER_TEXT_PASSWORD)) {
                     passwordField.setText(UITexts.STRING_EMPTY);
                 }
-                passwordField.setTextFill(UIColors.OFFBLACK);
-                passwordField.setBorderColor(UIColors.COLOR_INTERACTIVE);
+                passwordField.setTextFill(UIColors.OFFBLACK_FX);
+                passwordField.setBorderColor(UIColors.COLOR_INTERACTIVE_FX);
                 passwordField.setMaskText(true);
             } else {
                 if (passwordField.getText().isEmpty()) {
                     passwordField.setText(UITexts.PLACEHOLDER_TEXT_PASSWORD);
                     passwordField.setMaskText(false);
                 }
-                passwordField.setTextFill(UIColors.COLOR_OUTLINE);
-                passwordField.setBorderColor(UIColors.COLOR_OUTLINE);
+                passwordField.setTextFill(UIColors.COLOR_OUTLINE_FX);
+                passwordField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
             }
         });
 
@@ -314,8 +305,8 @@ public class RegistrationView extends BaseFrame {
 
         passwordField.setText(UITexts.PLACEHOLDER_TEXT_PASSWORD);
         passwordField.setMaskText(false);
-        passwordField.setTextFill(UIColors.COLOR_OUTLINE);
-        passwordField.setBorderColor(UIColors.COLOR_OUTLINE);
+        passwordField.setTextFill(UIColors.COLOR_OUTLINE_FX);
+        passwordField.setBorderColor(UIColors.COLOR_OUTLINE_FX);
 
         mainPane.getChildren().add(passwordField);
 
@@ -332,7 +323,7 @@ public class RegistrationView extends BaseFrame {
         registerButton.setLayoutY(403);
         registerButton.setPrefSize(300, 50);
 
-        registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE) + "; " +
+        registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE_FX) + "; " +
                 "-fx-background-radius: " + UIUtils.ROUNDNESS + "; " +
                 "-fx-text-fill: white; " +
                 "-fx-font: " + UIFonts.FONT_GENERAL_UI.getSize() + " '" + UIFonts.FONT_GENERAL_UI.getFamily() + "';");
@@ -342,15 +333,15 @@ public class RegistrationView extends BaseFrame {
         });
 
         registerButton.setOnMouseEntered(event -> {
-            registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE_DARKER) + "; " +
+            registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE_DARKER_FX) + "; " +
                     "-fx-background-radius: " + UIUtils.ROUNDNESS + "; " +
-                    "-fx-text-fill: " + toHexString(UIColors.OFFWHITE) + "; " +
+                    "-fx-text-fill: " + toHexString(UIColors.OFFWHITE_FX) + "; " +
                     "-fx-font: " + UIFonts.FONT_GENERAL_UI.getSize() + " '" + UIFonts.FONT_GENERAL_UI.getFamily() + "';");
             registerButton.setCursor(Cursor.HAND);
         });
 
         registerButton.setOnMouseExited(event -> {
-            registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE) + "; " +
+            registerButton.setStyle("-fx-background-color: " + toHexString(UIColors.COLOR_INTERACTIVE_FX) + "; " +
                     "-fx-background-radius: " + UIUtils.ROUNDNESS + "; " +
                     "-fx-text-fill: white; " +
                     "-fx-font: " + UIFonts.FONT_GENERAL_UI.getSize() + " '" + UIFonts.FONT_GENERAL_UI.getFamily() + "';");
@@ -373,14 +364,13 @@ public class RegistrationView extends BaseFrame {
             }
         });
 
-        loginLink.setTextFill(UIColors.OFFWHITE);
+        loginLink.setTextFill(UIColors.OFFWHITE_FX);
 
         loginLink.setOnMouseEntered(event -> {
-            loginLink.setTextFill(UIColors.COLOR_INTERACTIVE);
+            loginLink.setTextFill(UIColors.COLOR_INTERACTIVE_FX);
         });
 
         loginLink.setOnMouseExited(event -> {
-            loginLink.setTextFill(UIColors.OFFWHITE);
         });
 
         mainPane.getChildren().add(loginLink);

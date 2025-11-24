@@ -37,7 +37,7 @@ public class UIUtils {
     public static Font loadCustomFont(String path) {
         try {
             File fontFile = new File(path);
-            return Font.loadFont(fontFile.toURI().toString(), fontSize);
+            return Font.loadFont(fontFile.toURI().toString(), 14);
         } catch (Exception e) {
             Logger.log(e.getMessage(), FileConstants.ERROR_LOGS_FILE_PATH);
             return Font.getDefault();

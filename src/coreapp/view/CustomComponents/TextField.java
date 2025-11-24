@@ -1,93 +1,123 @@
 package coreapp.view.CustomComponents;
 
-import javax.swing.*;
-
+import javafx.geometry.Insets;
+import javafx.scene.control.Control;
+import javafx.scene.control.Skin;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import coreapp.util.constants.UIColors;
 import coreapp.util.constants.UIFonts;
 import coreapp.util.ui.UIUtils;
 
-import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
-
 /**
- * A custom text field component with rounded corners and custom styling. This
- * class extends JTextField to provide enhanced visual appearance and
+ * A custom JavaFX TextField component with rounded corners and custom styling.
+ * This class extends TextField to provide enhanced visual appearance and
  * functionality.
  */
-@SuppressWarnings("serial")
-public class TextField extends JTextField {
-	/**
-	 * The shape used for drawing the border of the text field.
-	 */
-	private Shape shape;
-
-	/**
-	 * The color of the border.
-	 */
-	private Color borderColor = UIColors.COLOR_INTERACTIVE;
-
-	/**
-	 * Constructs a new TextField with default settings.
-	 */
-	public TextField() {
-		setOpaque(false);
-		setBackground(UIColors.COLOR_BACKGROUND);
-		setForeground(UIColors.OFFBLACK);
-		setCaretColor(Color.white);
-		setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-		setMargin(new Insets(2, 10, 2, 2));
-		setHorizontalAlignment(SwingConstants.LEFT);
-		setFont(UIFonts.FONT_GENERAL_UI);
-	}
-
-	/**
-	 * Overrides the paintComponent method to customize the appearance of the text
-	 * field.
-	 *
-	 * @param g The Graphics object used for painting.
-	 */
-	protected void paintComponent(Graphics g) {
-		Graphics2D g2 = UIUtils.get2dGraphics(g);
-		g2.setColor(getBackground());
-		g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIUtils.ROUNDNESS, UIUtils.ROUNDNESS);
-		super.paintComponent(g2);
-	}
-
-	/**
-	 * Overrides the paintBorder method to customize the border of the text field.
-	 *
-	 * @param g The Graphics object used for painting.
-	 */
-	protected void paintBorder(Graphics g) {
-		Graphics2D g2 = UIUtils.get2dGraphics(g);
-		g2.setColor(borderColor);
-		g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, UIUtils.ROUNDNESS, UIUtils.ROUNDNESS);
-	}
-
-	/**
-	 * Checks if the specified coordinates are contained within the bounds of the
-	 * text field.
-	 *
-	 * @param x The x-coordinate of the point to check.
-	 * @param y The y-coordinate of the point to check.
-	 * @return True if the point is contained within the bounds of the text field,
-	 *         otherwise false.
-	 */
-	public boolean contains(int x, int y) {
-		if (shape == null || !shape.getBounds().equals(getBounds())) {
-			shape = new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, UIUtils.ROUNDNESS,
-					UIUtils.ROUNDNESS);
-		}
-		return shape.contains(x, y);
-	}
-
-	/**
-	 * Sets the color of the border.
-	 *
-	 * @param color The color to set for the border.
-	 */
-	public void setBorderColor(Color color) {
-		borderColor = color;
-		repaint();
-	}
+public class TextField extends javafx.scene.control.TextField {
+    
+    /**
+     * The color of the border.
+     */
+    private Color borderColor = UIColors.COLOR_INTERACTIVE_FX;
+    
+    /**
+     * Constructs a new TextField with default settings.
+     */
+    public TextField() {
+        super();
+        initializeStyle();
+    }
+    
+    /**
+     * Constructs a new TextField with initial text.
+     * 
+     * @param text The initial text for the text field.
+     */
+    public TextField(String text) {
+        super(text);
+        initializeStyle();
+    }
+    
+    /**
+     * Initializes the styling for the text field.
+     */
+    private void initializeStyle() {
+        // Set font
+        setFont(Font.font(UIFonts.FONT_GENERAL_UI.getFamily(), UIFonts.FONT_GENERAL_UI.getSize()));
+        
+        // Set padding (equivalent to margin in Swing)
+        setPadding(new Insets(5, 10, 5, 10));
+        
+        // Apply initial style
+        updateStyle();
+        
+        // Remove default focus indicator
+        setFocusTraversable(true);
+    }
+    
+    /**
+     * Generates the CSS style string based on current properties.
+     * 
+     * @return The CSS style string.
+     */
+    private String generateStyle() {
+        return String.format(
+            "-fx-background-color: %s;" +
+            "-fx-text-fill: %s;" +
+            "-fx-background-radius: %d;" +
+            "-fx-border-radius: %d;" +
+            "-fx-border-color: %s;" +
+            "-fx-border-width: 1;" +
+            "-fx-prompt-text-fill: %s;" +
+            "-fx-highlight-fill: %s;" +
+            "-fx-highlight-text-fill: white;",
+            toHex(UIColors.COLOR_BACKGROUND_FX),
+            toHex(UIColors.OFFBLACK_FX),
+            UIUtils.ROUNDNESS,
+            UIUtils.ROUNDNESS,
+            toHex(borderColor),
+            toHex(UIColors.COLOR_OUTLINE_FX),
+            toHex(UIColors.COLOR_INTERACTIVE_FX)
+        );
+    }
+    
+    /**
+     * Updates the style of the text field.
+     */
+    private void updateStyle() {
+        setStyle(generateStyle());
+    }
+    
+    /**
+     * Converts Color to hex string (#RRGGBB).
+     * 
+     * @param color The color to convert.
+     * @return The hex string representation of the color.
+     */
+    private String toHex(Color color) {
+        return String.format("#%02X%02X%02X",
+            (int) (color.getRed() * 255),
+            (int) (color.getGreen() * 255),
+            (int) (color.getBlue() * 255));
+    }
+    
+    /**
+     * Sets the color of the border.
+     * 
+     * @param color The color to set for the border.
+     */
+    public void setBorderColor(Color color) {
+        this.borderColor = color;
+        updateStyle();
+    }
+    
+    /**
+     * Gets the current border color.
+     * 
+     * @return The current border color.
+     */
+    public Color getBorderColor() {
+        return borderColor;
+    }
 }

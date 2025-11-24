@@ -2,6 +2,7 @@ package coreapp.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -9,6 +10,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.text.Font;
 import coreapp.util.constants.FontConstants;
 import coreapp.util.constants.ImagePath;
 import coreapp.util.constants.UITexts;
@@ -17,57 +23,36 @@ import coreapp.util.constants.WindowConstants;
 import coreapp.util.ui.UIUtils;
 import coreapp.util.ui.toaster.Toaster;
 
-import static jdk.internal.net.http.common.Utils.close;
-
 /**
  * The NumberOfPlayersView class represents a stage for selecting the number of
- * players in a game.
+ * players in a game (JavaFX version).
  */
 public class NumberOfPlayersView extends BaseFrame {
 
-    /** Label for displaying the number of players. */
     private Label numberOfPlayersLabel;
-
-    /** The number of players selected. */
     private int numberOfPlayers = 2;
-
-    /**
-     * The main font of the leaderboard page.
-     */
-    private final javafx.scene.text.Font customFont;
-
-    /**
-     * The toaster object for displaying notifications.
-     */
+    private final Font customFont;
     private Toaster toaster;
-
-    /**
-     * The main panel containing the components of the NumberOfPlayersView stage.
-     */
     private Pane mainPanel;
 
-    /**
-     * Constructs a new NumberOfPlayersView.
-     */
     public NumberOfPlayersView() {
         super(WindowConstants.NUMBER_OF_PLAYERS_WINDOW_TITLE);
         customFont = UIUtils.loadCustomFont(FontConstants.RechargeFontPath);
         initializeStage();
     }
 
-    /**
-     * Initializes the stage components.
-     */
     @Override
     void initializeStage() {
         mainPanel = createGradientPanel();
+        toaster = new Toaster(mainPanel);
+        
         VBox mainContainer = new VBox(10);
         mainContainer.setAlignment(Pos.CENTER);
 
         // Play against bots label with back button
         Label playAgainstBotsLabel = new Label(UITexts.PLAY_AGAINST_BOTS.toUpperCase());
-        playAgainstBotsLabel.setFont(javafx.scene.text.Font.font(customFont.getFamily(), 50));
-        playAgainstBotsLabel.setTextFill(javafx.scene.paint.Color.CYAN);
+        playAgainstBotsLabel.setFont(Font.font(customFont.getFamily(), 50));
+        playAgainstBotsLabel.setTextFill(Color.CYAN);
         playAgainstBotsLabel.setAlignment(Pos.CENTER);
 
         Image backImage = new Image(ImagePath.BACK_ICON);
@@ -79,9 +64,10 @@ public class NumberOfPlayersView extends BaseFrame {
         goBackButton.setGraphic(backImageView);
         goBackButton.setStyle("-fx-background-color: transparent;");
         goBackButton.setPrefSize(50, 50);
+        goBackButton.setCursor(Cursor.HAND);
 
         goBackButton.setOnAction(e -> {
-            close();
+            dispose();
             new MainMenu();
         });
 
@@ -96,8 +82,8 @@ public class NumberOfPlayersView extends BaseFrame {
 
         // Number of players text label
         Label numberOfBotsTextLabel = new Label(UITexts.NUMBER_OF_PLAYERS);
-        numberOfBotsTextLabel.setFont(javafx.scene.text.Font.font(customFont.getFamily(), 30));
-        numberOfBotsTextLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+        numberOfBotsTextLabel.setFont(Font.font(customFont.getFamily(), 30));
+        numberOfBotsTextLabel.setTextFill(Color.WHITE);
         numberOfBotsTextLabel.setAlignment(Pos.CENTER);
         numberOfBotsTextLabel.setMaxWidth(Double.MAX_VALUE);
         mainContainer.getChildren().add(numberOfBotsTextLabel);
@@ -118,6 +104,7 @@ public class NumberOfPlayersView extends BaseFrame {
         decreaseButton.setGraphic(decreaseImageView);
         decreaseButton.setStyle("-fx-background-color: transparent;");
         decreaseButton.setPrefSize(buttonSize, buttonSize);
+        decreaseButton.setCursor(Cursor.HAND);
 
         decreaseButton.setOnAction(e -> {
             if (numberOfPlayers > 2) {
@@ -128,8 +115,8 @@ public class NumberOfPlayersView extends BaseFrame {
         thirdPanel.getChildren().add(decreaseButton);
 
         numberOfPlayersLabel = new Label(String.valueOf(numberOfPlayers));
-        numberOfPlayersLabel.setFont(javafx.scene.text.Font.font(customFont.getFamily(), 23));
-        numberOfPlayersLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+        numberOfPlayersLabel.setFont(Font.font(customFont.getFamily(), 23));
+        numberOfPlayersLabel.setTextFill(Color.WHITE);
         numberOfPlayersLabel.setAlignment(Pos.CENTER);
         thirdPanel.getChildren().add(numberOfPlayersLabel);
 
@@ -142,6 +129,7 @@ public class NumberOfPlayersView extends BaseFrame {
         increaseButton.setGraphic(increaseImageView);
         increaseButton.setStyle("-fx-background-color: transparent;");
         increaseButton.setPrefSize(buttonSize, buttonSize);
+        increaseButton.setCursor(Cursor.HAND);
 
         increaseButton.setOnAction(e -> {
             if (numberOfPlayers < 10) {
@@ -155,8 +143,8 @@ public class NumberOfPlayersView extends BaseFrame {
 
         // Session name label
         Label nameOfSessionLabel = new Label(UITexts.NAME_OF_SESSION);
-        nameOfSessionLabel.setFont(javafx.scene.text.Font.font(customFont.getFamily(), 30));
-        nameOfSessionLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+        nameOfSessionLabel.setFont(Font.font(customFont.getFamily(), 30));
+        nameOfSessionLabel.setTextFill(Color.WHITE);
         nameOfSessionLabel.setAlignment(Pos.CENTER);
         nameOfSessionLabel.setMaxWidth(Double.MAX_VALUE);
         mainContainer.getChildren().add(nameOfSessionLabel);
@@ -165,8 +153,14 @@ public class NumberOfPlayersView extends BaseFrame {
         HBox wrapper = new HBox();
         wrapper.setAlignment(Pos.CENTER);
         TextField sessionNameField = new TextField();
-        sessionNameField.setFont(javafx.scene.text.Font.font(customFont.getFamily(), 23));
-        sessionNameField.setStyle("-fx-text-fill: white; -fx-background-color: transparent;");
+        sessionNameField.setFont(Font.font(customFont.getFamily(), 23));
+        sessionNameField.setStyle(
+            "-fx-text-fill: white;" +
+            "-fx-background-color: rgba(255, 255, 255, 0.2);" +
+            "-fx-border-color: white;" +
+            "-fx-border-radius: 10;" +
+            "-fx-background-radius: 10;"
+        );
         sessionNameField.setAlignment(Pos.CENTER);
         sessionNameField.setPrefSize(555, 90);
         wrapper.getChildren().add(sessionNameField);
@@ -184,15 +178,14 @@ public class NumberOfPlayersView extends BaseFrame {
         startGameButton.setGraphic(startButtonImageView);
         startGameButton.setStyle("-fx-background-color: transparent;");
         startGameButton.setPadding(Insets.EMPTY);
+        startGameButton.setCursor(Cursor.HAND);
 
         startGameButton.setOnAction(e -> {
             String sessionName = sessionNameField.getText();
             if (sessionName.length() == 0) {
-                // Toaster implementation would need to be adapted for JavaFX
-                // toaster.warn(WarningConstants.FILL_SESSION_NAME_WARNING);
-                System.out.println(WarningConstants.FILL_SESSION_NAME_WARNING);
+                toaster.warn(WarningConstants.FILL_SESSION_NAME_WARNING);
             } else {
-                close();
+                dispose();
                 new GameTable(numberOfPlayers, sessionName);
             }
         });
@@ -200,28 +193,31 @@ public class NumberOfPlayersView extends BaseFrame {
         VBox.setMargin(startGameButton, new Insets(0, 0, 10, 0));
         mainContainer.getChildren().add(startGameButton);
 
-        // Initialize toaster (would need JavaFX implementation)
-        // toaster = new Toaster(mainPanel);
-
         mainPanel.getChildren().add(mainContainer);
 
-        Scene scene = new Scene(mainPanel);
+        Scene scene = new Scene(mainPanel, WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
         setScene(scene);
         show();
     }
 
-    /**
-     * Creates a gradient panel (placeholder - needs actual gradient implementation)
-     */
     private Pane createGradientPanel() {
         Pane panel = new Pane();
-        // Set gradient background (example - adjust colors as needed)
-        panel.setStyle("-fx-background-color: linear-gradient(to bottom, #1e3c72, #2a5298);");
+        panel.setPrefSize(WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
+        
+        // Create gradient background
+        Stop[] stops = new Stop[] { 
+            new Stop(0, Color.web("#1e3c72")), 
+            new Stop(1, Color.web("#2a5298"))
+        };
+        LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+        BackgroundFill bgFill = new BackgroundFill(gradient, null, null);
+        panel.setBackground(new Background(bgFill));
+        
         return panel;
     }
 
     @Override
     void initializeFrame() {
-
+        // Not used for this view
     }
 }

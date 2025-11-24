@@ -1,6 +1,7 @@
 package coreapp.view.Popups;
 
 import coreapp.model.enums.Color;
+import coreapp.view.GameTable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 /**
  * Popup dialog for selecting a color (JavaFX version).
@@ -20,11 +22,11 @@ public class ColorSelectionPopup {
     /**
      * Constructs a color selection popup dialog.
      *
-     * @param parent the parent Stage
+     * @param gameTable the parent Stage
      */
-    public ColorSelectionPopup(Stage parent) {
+    public ColorSelectionPopup(GameTable gameTable) {
         dialog = new Stage();
-        dialog.initOwner(parent);
+        dialog.initOwner(gameTable);
         dialog.setTitle("Choose Color");
         dialog.initModality(Modality.WINDOW_MODAL);
 

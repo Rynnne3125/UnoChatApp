@@ -1,302 +1,230 @@
 package coreapp.view;
 
-import javax.swing.*;
+import coreapp.data.UserRepository;
+import coreapp.data.UserStatisticRepository;
+import coreapp.model.user.User;
+import coreapp.model.user.UserStatistic;
+import coreapp.util.constants.*;
+import coreapp.util.helpers.Logger;
+import coreapp.util.session.CurrentUserManager;
+import coreapp.util.ui.UIUtils;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.text.Font;
 
-import javax.swing.plaf.basic.BasicScrollBarUI;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import coreapp.data.UserRepository;
-import coreapp.data.UserStatisticRepository;
-import coreapp.model.user.User;
-import coreapp.model.user.UserStatistic;
-import coreapp.util.constants.ErrorConstants;
-import coreapp.util.constants.FileConstants;
-import coreapp.util.constants.FontConstants;
-import coreapp.util.constants.ImagePath;
-import coreapp.util.constants.UIColors;
-import coreapp.util.constants.UITexts;
-import coreapp.util.constants.WindowConstants;
-import coreapp.util.helpers.Logger;
-import coreapp.util.session.CurrentUserManager;
-import coreapp.util.ui.UIUtils;
-import coreapp.view.CustomComponents.ButtonWithImage;
-
 /**
- * The leaderboard page view of the application. This class represents the
- * graphical user interface for the leaderboard functionality.
+ * The leaderboard page view of the application (JavaFX version).
+ * This class represents the graphical user interface for the leaderboard functionality.
  */
-@SuppressWarnings("serial")
 public class LeaderboardView extends BaseFrame {
-	/**
-	 * The main JPanel of the leaderboard page.
-	 */
-	private JPanel leaderboardPanel;
+    
+    private VBox leaderboardPanel;
+    private final Font customFont = UIUtils.loadCustomFont(FontConstants.RechargeFontPath);
 
-	/**
-	 * The main font of the leaderboard page.
-	 */
-	private final Font customFont = UIUtils.loadCustomFont(FontConstants.RechargeFontPath);
+    public LeaderboardView() {
+        super(WindowConstants.LEADERBOARD_WINDOW_TITLE);
+        initializeFrame();
+    }
 
-	/**
-	 * Constructs a new LeaderboardView.
-	 */
-	public LeaderboardView() {
-		super(WindowConstants.LEADERBOARD_WINDOW_TITLE);
-		initializeFrame();
-	}
+    @Override
+    void initializeFrame() {
+        BorderPane backgroundPanel = new BorderPane();
+        backgroundPanel.setPrefSize(WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
 
-	/**
-	 * Initializes the frame components.
-	 */
-	@Override
-	void initializeFrame() {
-		JPanel backgroundPanel = new JPanel(new BorderLayout()) {
-			@Override
-			protected void paintComponent(Graphics g) {
-				super.paintComponent(g);
+        // Create gradient background
+        Stop[] stops = new Stop[] { 
+            new Stop(0, Color.web("#1488CC")), 
+            new Stop(1, Color.web("#2B32B2"))
+        };
+        LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+        BackgroundFill bgFill = new BackgroundFill(gradient, null, null);
+        backgroundPanel.setBackground(new Background(bgFill));
 
-				Graphics2D g2d = (Graphics2D) g.create();
+        leaderboardPanel = new VBox();
 
-				Color color1 = new Color(20, 136, 204);
-				Color color2 = new Color(43, 50, 178);
+        // Create title panel with back button
+        HBox titlePanel = new HBox(20);
+        titlePanel.setPadding(new Insets(10, 20, 10, 20));
+        titlePanel.setAlignment(Pos.CENTER_LEFT);
 
-				GradientPaint gradient = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
+        // Back button
+        Image backIcon = new Image(ImagePath.CLOSE_ICON);
+        ImageView backImageView = new ImageView(backIcon);
+        backImageView.setFitWidth(50);
+        backImageView.setFitHeight(50);
 
-				g2d.setPaint(gradient);
-				g2d.fillRect(0, 0, getWidth(), getHeight());
+        Button backButton = new Button();
+        backButton.setGraphic(backImageView);
+        backButton.setStyle("-fx-background-color: transparent;");
+        backButton.setPrefSize(50, 50);
+        backButton.setOnAction(e -> {
+            dispose();
+            new MainMenu();
+        });
 
-				g2d.dispose();
-			}
-		};
-		backgroundPanel.setOpaque(false);
-		setContentPane(backgroundPanel);
+        // Title label
+        Label titleLabel = new Label(UITexts.LEADERBOARD_HEADLINE.toUpperCase());
+        titleLabel.setFont(Font.font(customFont.getFamily(), 32));
+        titleLabel.setTextFill(UIColors.OFFWHITE_FX);
+        HBox.setMargin(titleLabel, new Insets(0, 0, 0, 370));
 
-		leaderboardPanel = new JPanel(new BorderLayout());
+        titlePanel.getChildren().addAll(backButton, titleLabel);
+        backgroundPanel.setTop(titlePanel);
 
-		ImageIcon icon = new ImageIcon(ImagePath.CLOSE_ICON);
-		Image image = icon.getImage();
-		Image scaledImage = image.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-		ImageIcon scaledIcon = new ImageIcon(scaledImage);
+        try {
+            displayLeaderboard();
+            backgroundPanel.setCenter(leaderboardPanel);
+        } catch (IOException e) {
+            Logger.log(e.getMessage(), FileConstants.ERROR_LOGS_FILE_PATH);
+        }
 
-		ButtonWithImage backButton = new ButtonWithImage(scaledIcon, 50, 50);
+        Scene scene = new Scene(backgroundPanel, WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
+        setScene(scene);
+        show();
+    }
 
-		backButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				dispose();
-				new MainMenu();
-			}
-		});
+    private void displayLeaderboard() throws IOException {
+        leaderboardPanel.getChildren().clear();
 
-		JLabel titleLabel = new JLabel(UITexts.LEADERBOARD_HEADLINE.toUpperCase());
-		titleLabel.setFont(customFont.deriveFont(Font.PLAIN, 32));
-		titleLabel.setForeground(UIColors.OFFWHITE);
-		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 390, 0, 0));
+        List<UserStatistic> userStatisticsList = UserStatisticRepository.getUserStatistics();
+        Collections.sort(userStatisticsList, Comparator.comparingInt(UserStatistic::getTotalScore).reversed());
 
-		JPanel titlePanel = new JPanel(new BorderLayout());
-		titlePanel.setOpaque(false);
-		titlePanel.setForeground(UIColors.OFFBLACK);
-		titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        var currentUser = CurrentUserManager.getInstance().getCurrentUser();
+        int currentUserRow = -1;
 
-		titlePanel.add(backButton, BorderLayout.WEST);
-		titlePanel.add(titleLabel, BorderLayout.CENTER);
+        // Create table
+        TableView<LeaderboardEntry> table = new TableView<>();
+        table.setStyle("-fx-background-color: transparent;");
 
-		backgroundPanel.add(titlePanel, BorderLayout.NORTH);
+        // Rank column
+        TableColumn<LeaderboardEntry, Integer> rankColumn = new TableColumn<>(UITexts.LEADERBOARD_COLUMN_RANK);
+        rankColumn.setCellValueFactory(new PropertyValueFactory<>("rank"));
+        rankColumn.setPrefWidth(200);
+        rankColumn.setStyle("-fx-alignment: CENTER;");
 
-		try {
-			displayLeaderboard();
-			setVisible(true);
-		} catch (IOException e) {
-			Logger.log(e.getMessage(), FileConstants.ERROR_LOGS_FILE_PATH);
-		}
-	}
+        // Username column
+        TableColumn<LeaderboardEntry, String> usernameColumn = new TableColumn<>(UITexts.LEADERBOARD_COLUMN_USERNAME);
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        usernameColumn.setPrefWidth(400);
+        usernameColumn.setStyle("-fx-alignment: CENTER;");
 
-	/**
-	 * Display the leaderboard table.
-	 */
-	private void displayLeaderboard() throws IOException {
-		leaderboardPanel.removeAll();
+        // Score column
+        TableColumn<LeaderboardEntry, Integer> scoreColumn = new TableColumn<>(UITexts.LEADERBOARD_COLUMN_SCORE);
+        scoreColumn.setCellValueFactory(new PropertyValueFactory<>("score"));
+        scoreColumn.setPrefWidth(200);
+        scoreColumn.setStyle("-fx-alignment: CENTER;");
 
-		List<UserStatistic> userStatisticsList = UserStatisticRepository.getUserStatistics();
-		Collections.sort(userStatisticsList, Comparator.comparingInt(UserStatistic::getTotalScore).reversed());
+        table.getColumns().addAll(rankColumn, usernameColumn, scoreColumn);
 
-		DefaultTableModel model = new DefaultTableModel();
-		model.addColumn(UITexts.LEADERBOARD_COLUMN_RANK);
-		model.addColumn(UITexts.LEADERBOARD_COLUMN_USERNAME);
-		model.addColumn(UITexts.LEADERBOARD_COLUMN_SCORE);
+        // Populate table
+        ObservableList<LeaderboardEntry> data = FXCollections.observableArrayList();
+        int rank = 1;
+        for (UserStatistic userStatistic : userStatisticsList) {
+            var user = UserRepository.getUserById(userStatistic.getUserId());
+            String username = user != null ? user.getUsername() : UITexts.UNKNOWN;
 
-		var currentUser = CurrentUserManager.getInstance().getCurrentUser();
-		int currentUserRow = -1;
+            data.add(new LeaderboardEntry(rank, username, userStatistic.getTotalScore(), user.getId()));
 
-		int rank = 1;
-		for (UserStatistic userStatistic : userStatisticsList) {
-			var user = UserRepository.getUserById(userStatistic.getUserId());
-			String username = user != null ? user.getUsername() : UITexts.UNKNOWN;
+            if (user.getId().equals(currentUser.getId())) {
+                currentUserRow = rank - 1;
+            }
+            rank++;
+        }
 
-			model.addRow(new Object[] { rank, username, userStatistic.getTotalScore() });
-			rank++;
+        table.setItems(data);
 
-			if (user.getId().equals(currentUser.getId())) {
-				currentUserRow = rank - 2;
-			}
-		}
+        // Custom row factory for coloring
+        final int finalCurrentUserRow = currentUserRow;
+        table.setRowFactory(tv -> new TableRow<LeaderboardEntry>() {
+            @Override
+            protected void updateItem(LeaderboardEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item == null || empty) {
+                    setStyle("");
+                } else {
+                    int rowIndex = getIndex();
+                    if (rowIndex == finalCurrentUserRow) {
+                        setStyle("-fx-background-color: rgba(255, 255, 255, 0.3); -fx-text-fill: black;");
+                    } else if (rowIndex == 0) {
+                        setStyle("-fx-text-fill: #F9A114;"); // Gold
+                    } else if (rowIndex == 1) {
+                        setStyle("-fx-text-fill: #C0C0C0;"); // Silver
+                    } else if (rowIndex == 2) {
+                        setStyle("-fx-text-fill: #CD7F32;"); // Bronze
+                    } else {
+                        setStyle("-fx-text-fill: white;");
+                    }
+                }
+            }
+        });
 
-		final int finalCurrentUserRow = currentUserRow;
-		JTable leaderboardTable = new JTable(model) {
-			@Override
-			public boolean getScrollableTracksViewportWidth() {
-				return getPreferredSize().width < getParent().getWidth();
-			}
+        // Double-click to view profile
+        table.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                LeaderboardEntry selectedEntry = table.getSelectionModel().getSelectedItem();
+                if (selectedEntry != null) {
+                    try {
+                        User selectedUser = UserRepository.getUserById(selectedEntry.getUserId());
+                        dispose();
+                        new UserProfileView(selectedUser, LeaderboardView.class);
+                    } catch (IOException ex) {
+                        Logger.log(ErrorConstants.USER_DOES_NOT_EXIST, FileConstants.ERROR_LOGS_FILE_PATH);
+                    }
+                }
+            }
+        });
 
-			@Override
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
+        // Style table
+        table.setStyle("-fx-background-color: transparent; -fx-font-size: 20px;");
+        table.setPrefHeight(500);
+        table.setPrefWidth(800);
 
-			@Override
-			public TableCellRenderer getCellRenderer(int row, int column) {
-				return new DefaultTableCellRenderer() {
-					@Override
-					public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-							boolean hasFocus, int row, int column) {
-						Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
-								column);
-						((JLabel) c).setHorizontalAlignment(SwingConstants.CENTER);
+        VBox tableContainer = new VBox(table);
+        tableContainer.setPadding(new Insets(20, 50, 20, 50));
+        tableContainer.setAlignment(Pos.CENTER);
 
-						if (row == finalCurrentUserRow) { // && row > 2
-							c.setForeground(UIColors.OFFBLACK);
-						} else {
-							if (row == 0) {
-								c.setForeground(new Color(249, 161, 20)); // Gold
-							} else if (row == 1) {
-								c.setForeground(new Color(192, 192, 192)); // Silver
-							} else if (row == 2) {
-								c.setForeground(new Color(205, 127, 50)); // Bronze
-							} else {
-								c.setForeground(Color.WHITE);
-							}
-						}
+        leaderboardPanel.getChildren().add(tableContainer);
+    }
 
-						return c;
-					}
-				};
-			}
-		};
+    @Override
+    void initializeStage() {
+        // Not used for this view
+    }
 
-		leaderboardTable.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					JTable target = (JTable) e.getSource();
-					int row = target.getSelectedRow();
+    // Inner class for table entries
+    public static class LeaderboardEntry {
+        private final Integer rank;
+        private final String username;
+        private final Integer score;
+        private final String userId;
 
-					UserStatistic selectedUserStatistic = userStatisticsList.get(row);
+        public LeaderboardEntry(int rank, String username, int score, String userId) {
+            this.rank = rank;
+            this.username = username;
+            this.score = score;
+            this.userId = userId;
+        }
 
-					try {
-						User selectedUser = UserRepository.getUserById(selectedUserStatistic.getUserId());
-
-						dispose();
-						new UserProfileView(selectedUser, LeaderboardView.class);
-					} catch (IOException ex) {
-						Logger.log(ErrorConstants.USER_DOES_NOT_EXIST, FileConstants.ERROR_LOGS_FILE_PATH);
-					}
-				}
-			}
-
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				leaderboardTable.setCursor(new Cursor(Cursor.HAND_CURSOR));
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e) {
-				leaderboardTable.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-			}
-		});
-
-		leaderboardTable.setFont(customFont.deriveFont(Font.PLAIN, 20));
-		leaderboardTable.setForeground(Color.WHITE);
-		leaderboardTable.setBackground(new Color(20, 136, 204));
-		leaderboardTable.setRowHeight(50);
-		leaderboardTable.getTableHeader().setFont(customFont.deriveFont(Font.BOLD, 25));
-		leaderboardTable.getTableHeader().setForeground(Color.WHITE);
-		leaderboardTable.getTableHeader().setBackground(Color.BLACK);
-		leaderboardTable.getTableHeader()
-				.setPreferredSize(new Dimension(leaderboardTable.getColumnModel().getTotalColumnWidth(), 50));
-
-		JScrollPane leaderboardScrollPane = new JScrollPane(leaderboardTable);
-		leaderboardScrollPane.setPreferredSize(new Dimension(800, 500));
-		leaderboardScrollPane.setBackground(new Color(20, 136, 204));
-
-		leaderboardScrollPane.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
-			@Override
-			protected void configureScrollBarColors() {
-				this.thumbColor = new Color(255, 255, 255, 100);
-				this.thumbDarkShadowColor = new Color(255, 255, 255, 150);
-				this.thumbHighlightColor = new Color(255, 255, 255, 100);
-				this.thumbLightShadowColor = new Color(255, 255, 255, 100);
-				this.trackColor = new Color(20, 136, 204);
-				this.trackHighlightColor = new Color(43, 50, 178);
-			}
-
-			@Override
-			protected JButton createDecreaseButton(int orientation) {
-				return createZeroButton();
-			}
-
-			@Override
-			protected JButton createIncreaseButton(int orientation) {
-				return createZeroButton();
-			}
-
-			private JButton createZeroButton() {
-				JButton button = new JButton();
-				button.setPreferredSize(new Dimension(0, 0));
-				button.setMinimumSize(new Dimension(0, 0));
-				button.setMaximumSize(new Dimension(0, 0));
-				return button;
-			}
-		});
-
-		JPanel tablePanel = new JPanel(new BorderLayout()) {
-			@Override
-			protected void paintComponent(Graphics g) {
-				super.paintComponent(g);
-
-				Graphics2D g2d = (Graphics2D) g.create();
-
-				Color color1 = new Color(20, 136, 204); // First color of the gradient
-				Color color2 = new Color(43, 50, 178); // Second color of the gradient
-
-				GradientPaint gradient = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
-
-				g2d.setPaint(gradient);
-				g2d.fillRect(0, 0, getWidth(), getHeight());
-
-				g2d.dispose();
-			}
-		};
-
-		tablePanel.add(leaderboardScrollPane, BorderLayout.CENTER);
-		tablePanel.setBorder(BorderFactory.createEmptyBorder(20, 50, 20, 50));
-
-		leaderboardPanel.add(tablePanel, BorderLayout.CENTER);
-
-		getContentPane().add(leaderboardPanel, BorderLayout.CENTER);
-
-		revalidate();
-		repaint();
-	}
+        public Integer getRank() { return rank; }
+        public String getUsername() { return username; }
+        public Integer getScore() { return score; }
+        public String getUserId() { return userId; }
+    }
 }

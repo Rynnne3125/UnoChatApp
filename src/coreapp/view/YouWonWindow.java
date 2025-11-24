@@ -1,37 +1,30 @@
 package coreapp.view;
 
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.stage.Stage;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import coreapp.util.constants.ImagePath;
 import coreapp.util.constants.WindowConstants;
 
-import static jdk.internal.net.http.common.Utils.close;
-
 /**
- * Represents a window displayed when the player wins the game. Extends the
- * BaseStage class.
+ * Represents the window displayed when the player wins the game (JavaFX version).
  */
-public class YouWonWindow extends BaseFrame {
-
-    /**
-     * Constructs a new YouWonWindow.
-     */
+class YouWonWindow extends BaseFrame {
+    
     public YouWonWindow() {
         super(WindowConstants.YOU_WON_WINDOW_TITLE);
         initializeStage();
     }
 
-    /**
-     * Initializes the stage layout.
-     */
     @Override
     void initializeStage() {
         Pane mainPanel = createGradientPanel();
@@ -40,12 +33,10 @@ public class YouWonWindow extends BaseFrame {
 
         // Back button panel
         Button backButton = createBackButton();
-
         StackPane buttonPanel = new StackPane();
         buttonPanel.setAlignment(Pos.TOP_LEFT);
         buttonPanel.setPadding(new Insets(20, 0, 0, 20));
         buttonPanel.getChildren().add(backButton);
-
         mainContainer.setTop(buttonPanel);
 
         // You won image
@@ -54,10 +45,9 @@ public class YouWonWindow extends BaseFrame {
         imageView.setFitWidth(400);
         imageView.setFitHeight(500);
         imageView.setPreserveRatio(true);
-
+        
         StackPane imagePanel = new StackPane(imageView);
         imagePanel.setAlignment(Pos.CENTER);
-
         mainContainer.setCenter(imagePanel);
 
         mainPanel.getChildren().add(mainContainer);
@@ -67,14 +57,6 @@ public class YouWonWindow extends BaseFrame {
         show();
     }
 
-    @Override
-    void initializeFrame() {
-
-    }
-
-    /**
-     * Creates the back button with image and action handler
-     */
     private Button createBackButton() {
         Image backImage = new Image(ImagePath.BACK_ICON);
         ImageView backImageView = new ImageView(backImage);
@@ -85,22 +67,33 @@ public class YouWonWindow extends BaseFrame {
         backButton.setGraphic(backImageView);
         backButton.setStyle("-fx-background-color: transparent;");
         backButton.setPrefSize(50, 50);
+        backButton.setCursor(Cursor.HAND);
 
         backButton.setOnAction(e -> {
-            close();
+            dispose();
             new MainMenu();
         });
 
         return backButton;
     }
 
-    /**
-     * Creates a gradient panel (placeholder - needs actual gradient implementation)
-     */
     private Pane createGradientPanel() {
         Pane panel = new Pane();
-        // Set gradient background (example - adjust colors as needed)
-        panel.setStyle("-fx-background-color: linear-gradient(to bottom, #1e3c72, #2a5298);");
+        panel.setPrefSize(WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
+        
+        Stop[] stops = new Stop[] { 
+            new Stop(0, Color.web("#1e3c72")), 
+            new Stop(1, Color.web("#2a5298"))
+        };
+        LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+        BackgroundFill bgFill = new BackgroundFill(gradient, null, null);
+        panel.setBackground(new Background(bgFill));
+        
         return panel;
+    }
+
+    @Override
+    void initializeFrame() {
+        // Not used for this view
     }
 }
