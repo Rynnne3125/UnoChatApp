@@ -1,0 +1,9 @@
+2025-11-24 11:01:25 - Error loading background image!
+2025-11-24 11:02:04 - database/userData.txt (No such file or directory)
+2025-11-24 11:02:04 - database/userData.txt (No such file or directory)
+2025-11-24 13:08:54 - Error loading background image!
+2025-11-24 13:09:04 - Error loading background image!
+2025-11-24 13:09:21 - database/userData.txt (No such file or directory)
+2025-11-24 13:21:04 - Error loading background image!
+2025-11-24 13:22:07 - database/userData.txt (No such file or directory)
+2025-11-24 13:22:08 - database/userData.txt (No such file or directory)

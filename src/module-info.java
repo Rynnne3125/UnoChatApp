@@ -6,7 +6,8 @@ module UnoChatApp {
 	requires jakarta.mail;
 	requires jakarta.activation;
 	requires com.google.gson;
-	requires WaifUPnP;
+	requires java.desktop;
+	requires java.net.http;
     opens model to com.google.gson;
 	opens application to javafx.graphics, javafx.fxml;
 	 
