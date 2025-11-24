@@ -1,4 +1,4 @@
-package community;
+package application;
 
 import javafx.animation.*;
 import javafx.application.Application;
@@ -25,6 +25,10 @@ import javafx.util.Duration;
 
 import java.util.Random;
 
+import control.NewsController;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import java.io.IOException;
 public class UnoGameMenu extends Application {
 
     private Stage primaryStage;
@@ -69,12 +73,14 @@ public class UnoGameMenu extends Application {
 
         Button btnPlay = createMenuButton("PLAY NOW", UNO_GREEN, "▶");
         Button btnCommunity = createMenuButton("CỘNG ĐỒNG", UNO_BLUE, "💬"); // Nút chuyển sang Chat
-        Button btnSettings = createMenuButton("CÀI ĐẶT", UNO_RED, "⚙");
+        Button btnNews = createMenuButton("NEWS",UNO_RED, "📰");
 
         // Xử lý sự kiện chuyển sang UnoChatApp
         btnCommunity.setOnAction(e -> switchToChatApp());
 
-        actionButtons.getChildren().addAll(btnPlay, btnCommunity, btnSettings);
+        btnNews.setOnAction(e -> switchToNews());
+
+        actionButtons.getChildren().addAll(btnPlay, btnCommunity, btnNews);
 
         mainContent.getChildren().addAll(logo, playerSetupBox, actionButtons);
         
@@ -88,6 +94,7 @@ public class UnoGameMenu extends Application {
         Scene scene = new Scene(root, 1024, 768);
         stage.setTitle("UNO Game - Ultimate Edition");
         stage.setScene(scene);
+        stage.setFullScreen(true);
         stage.show();
     }
 
@@ -111,6 +118,42 @@ public class UnoGameMenu extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+ // --- LOGIC CHUYỂN CẢNH SANG NEWS VIEW ---
+    private void switchToNews() {
+        // Tạo hiệu ứng mờ dần (Fade Out) trước khi chuyển cảnh cho mượt
+        FadeTransition ft = new FadeTransition(Duration.millis(300), primaryStage.getScene().getRoot());
+        ft.setFromValue(1.0);
+        ft.setToValue(0.0);
+        ft.setOnFinished(e -> {
+            try {
+                // 1. Load file FXML
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/NewsView.fxml"));
+                Parent root = loader.load();
+
+                // 2. Lấy Controller và khởi tạo dữ liệu (Quan trọng để load tin tức/user)
+                // Lưu ý: Cần đảm bảo class NewsController có hàm initData() public
+                Object controller = loader.getController();
+                if (controller instanceof NewsController) {
+                    ((NewsController) controller).initData();
+                }
+
+                // 3. Set Scene mới
+                Scene scene = new Scene(root);
+                primaryStage.setScene(scene);
+                primaryStage.setFullScreen(true);
+                primaryStage.centerOnScreen();
+                
+                // (Tùy chọn) Fade In lại nếu muốn
+                // FadeTransition ftIn = new FadeTransition(Duration.millis(300), root);
+                // ftIn.setFromValue(0.0); ftIn.setToValue(1.0); ftIn.play();
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                // Có thể hiển thị Alert báo lỗi nếu không tìm thấy file
+            }
+        });
+        ft.play();
     }
 
     // ============================================================
@@ -157,14 +200,24 @@ public class UnoGameMenu extends Application {
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(20));
         
-        Label lbl = new Label("THIẾT LẬP NGƯỜI CHƠI");
+        Label lbl = new Label("THÔNG TIN NGƯỜI CHƠI");
         lbl.setTextFill(Color.WHITE);
         lbl.setFont(Font.font("System", FontWeight.BOLD, 18));
 
+        // --- SỬA ĐỔI Ở ĐÂY ---
         TextField nameField = new TextField();
-        nameField.setPromptText("Nhập tên hiển thị...");
         nameField.setMaxWidth(300);
         nameField.setStyle("-fx-background-radius: 20; -fx-padding: 10; -fx-font-size: 14px; -fx-background-color: rgba(255,255,255,0.9);");
+
+        // Kiểm tra xem đã có người đăng nhập chưa (Biến Main.CurrentUser)
+        if (Main.CurrentUser != null) {
+            // Nếu đã đăng nhập, điền tên và khóa không cho sửa (hoặc để sửa tùy bạn)
+            nameField.setText(Main.CurrentUser.getUsername()); // Giả sử getter là getUserName() hoặc getHoTen()
+            nameField.setEditable(false); // Đã đăng nhập thì không sửa tên ở đây
+        } else {
+            nameField.setPromptText("Nhập tên hiển thị...");
+        }
+        // ---------------------
 
         HBox avatarBox = new HBox(10);
         avatarBox.setAlignment(Pos.CENTER);

@@ -1,4 +1,4 @@
-package community;
+package application;
 
 import javafx.animation.Animation;
 import javafx.animation.RotateTransition;
@@ -42,6 +42,10 @@ public class UnoChatApp extends Application {
     // --- TRẠNG THÁI ---
     private String username;
     private String myLanIP;
+    private static String targetFriendName = null; // Biến lưu tên người bạn muốn chat
+    public static void setTargetFriend(String name) {
+        targetFriendName = name;
+    }
     
     // Server & Connection
     private static VirtualHost activeVirtualHost; 
@@ -63,20 +67,92 @@ public class UnoChatApp extends Application {
         launch(args);
     }
 
+    
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
-        if (username == null) username = "Player_" + new Random().nextInt(999);
+        
+        // 1. Xử lý dữ liệu User
+        if (Main.CurrentUser != null) {
+            this.username = Main.CurrentUser.getUsername();
+        } else {
+            if (username == null) username = "Player_" + new Random().nextInt(999);
+        }
+        
         myLanIP = getRealLanIP(); 
         
         new File(HISTORY_DIR).mkdirs();
         loadGroupData(); 
         
-        setupMainMenu();
         primaryStage.setTitle("UNO Connect - " + username);
+
+        // 2. --- QUAN TRỌNG: SETUP GIAO DIỆN TRƯỚC ---
+        setupMainMenu(); 
+        
+        // 3. Hiển thị Stage
         primaryStage.show();
+        
+        // 4. --- QUAN TRỌNG: SET FULLSCREEN SAU CÙNG ---
+        // Phải gọi sau khi đã có Scene và sau khi show() (hoặc ngay trước show)
+        // nhưng bắt buộc phải SAU setupMainMenu()
+        primaryStage.setFullScreen(true); 
+
+        // 5. Logic Direct Message
+        if (targetFriendName != null) {
+            String pattern1 = "DM-" + username + "-" + targetFriendName;
+            String pattern2 = "DM-" + targetFriendName + "-" + username;
+
+            GroupData existingGroup = null;
+            for (GroupData g : savedGroups) {
+                if (g.groupName.equals(pattern1) || g.groupName.equals(pattern2)) {
+                    existingGroup = g;
+                    break;
+                }
+            }
+
+            if (existingGroup != null) {
+                GroupData finalGroup = existingGroup;
+                Platform.runLater(() -> handleRejoinGroup(finalGroup));
+            } else {
+                String friend = targetFriendName; 
+                Platform.runLater(() -> showCreateGroupDialogDM(friend));
+            }
+            targetFriendName = null; 
+        }
+    }
+    private void showCreateGroupDialogDM(String friendName) {
+        Dialog<String[]> dialog = new Dialog<>();
+        dialog.setTitle("Chat Riêng");
+        dialog.setHeaderText("Tạo phòng chat với " + friendName);
+        
+        ButtonType createType = new ButtonType("Tạo Phòng", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(createType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
+        
+        // Tự động đặt tên phòng
+        TextField nameField = new TextField("DM-" + username + "-" + friendName);
+        TextField portField = new TextField("6000"); // Port khác mặc định chút
+        
+        grid.add(new Label("Tên Phòng:"), 0, 0); grid.add(nameField, 1, 0);
+        grid.add(new Label("Cổng (Port):"), 0, 1); grid.add(portField, 1, 1);
+        
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(b -> b == createType ? new String[]{nameField.getText(), portField.getText()} : null);
+
+        dialog.showAndWait().ifPresent(result -> {
+            // Reset target sau khi xử lý xong
+            targetFriendName = null; 
+            try { 
+                startVirtualHostAndConnect(result[0], Integer.parseInt(result[1])); 
+            } catch (Exception e) { 
+                showAlert("Lỗi tạo phòng!"); 
+            }
+        });
     }
 
+    
     @Override
     public void stop() {
         if (activeVirtualHost != null) activeVirtualHost.stop();
@@ -185,6 +261,7 @@ public class UnoChatApp extends Application {
         backBtn.setOnAction(e -> {
             if (connectionToServer != null) try { connectionToServer.socket.close(); } catch(Exception ex){}
             setupMainMenu();
+            primaryStage.setFullScreen(true);
         });
 
         VBox titleBox = new VBox(2);
@@ -584,6 +661,7 @@ public class UnoChatApp extends Application {
         try {
             stop(); 
             UnoGameMenu gameMenu = new UnoGameMenu(); 
+            primaryStage.setFullScreen(true);
             gameMenu.start(primaryStage); 
         } catch (Exception e) {
             e.printStackTrace();
