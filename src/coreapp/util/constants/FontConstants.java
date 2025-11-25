@@ -5,8 +5,8 @@ package coreapp.util.constants;
  */
 public class FontConstants {
 	/** Path to the Recharge font. */
-	public static final String RechargeFontPath = "/fonts/recharge.otf";
+	public static final String RechargeFontPath = "fonts/recharge.otf";
 
 	/** Path to the Neuropolitical font. */
-	public static final String NeuropoliticalFontPath = "/fonts/neuropolitical.otf";
+	public static final String NeuropoliticalFontPath = "fonts/neuropolitical.otf";
 }

@@ -1,22 +1,10 @@
 package coreapp.view;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import application.Main;
 import coreapp.data.UserRepository;
 import coreapp.data.UserStatisticRepository;
 import coreapp.model.user.User;
 import coreapp.model.user.UserStatistic;
-import coreapp.util.constants.ErrorConstants;
-import coreapp.util.constants.FileConstants;
-import coreapp.util.constants.FontConstants;
-import coreapp.util.constants.ImagePath;
-import coreapp.util.constants.UIColors;
-import coreapp.util.constants.UITexts;
-import coreapp.util.constants.WindowConstants;
+import coreapp.util.constants.*;
 import coreapp.util.helpers.Logger;
 import coreapp.util.session.CurrentUserManager;
 import coreapp.util.ui.UIUtils;
@@ -25,24 +13,21 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * The leaderboard page view of the application (JavaFX version).
@@ -91,7 +76,7 @@ public class LeaderboardView extends BaseFrame {
         backButton.setPrefSize(50, 50);
         backButton.setOnAction(e -> {
             dispose();
-            new Main();
+            new MainMenu();
         });
 
         // Title label

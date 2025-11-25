@@ -2,9 +2,7 @@ package coreapp.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
-import coreapp.data.BotRepository;
 import coreapp.model.cards.ActionCard;
 import coreapp.model.cards.Card;
 import coreapp.model.cards.NumberCard;
@@ -14,7 +12,7 @@ import coreapp.model.enums.Color;
 import coreapp.model.enums.WildType;
 import coreapp.model.player.Bot;
 import coreapp.model.player.Player;
-import model.User;
+import coreapp.model.user.User;
 import coreapp.util.session.CurrentUserManager;
 
 /**
@@ -166,24 +164,7 @@ public class GameSession {
 		User currentUser = CurrentUserManager.getInstance().getCurrentUser();
 		Player currentPlayer = new Player(currentUser, new ArrayList<>());
 		players.add(currentPlayer);
-		try {
-	        List<Bot> bots = BotRepository.getBots();
-	        
-	        // Kiểm tra null trước khi addAll
-	        if (bots != null) {
-	            // Logic: Chỉ lấy đủ số lượng bot cần thiết
-	            // Ví dụ: Cần 4 người chơi, đã có 1 người thật -> cần lấy 3 bot
-	            int botsNeeded = numberOfPlayers - 1; 
-	            
-	            for (int i = 0; i < botsNeeded && i < bots.size(); i++) {
-	                this.players.add(bots.get(i));
-	            }
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        System.err.println("Lỗi khi khởi tạo Bot trong GameSession.");
-	    }
-		
+		players.addAll(Bot.getBotPlayers(numberOfPlayers - 1));
 	}
 
 	/**
