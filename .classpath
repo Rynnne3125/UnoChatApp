@@ -10,7 +10,7 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="database/|fonts/|images/|images/cards/" kind="src" path="src"/>
 	<classpathentry kind="lib" path="D:/Java/Document/SQLSERVER_Connect/Lib/mssql-jdbc-12.4.2.jre11.jar"/>
 	<classpathentry kind="lib" path="D:/Java/Document/SQLSERVER_Connect/Lib/jakarta.activation-1.2.2.jar">
 		<attributes>
@@ -23,6 +23,11 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="D:/Java/Document/SQLSERVER_Connect/Lib/gson-2.10.1.jar">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/Java/Document/SQLSERVER_Connect/Lib/WaifUPnP.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>

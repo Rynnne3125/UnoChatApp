@@ -10,7 +10,7 @@ module UnoChatApp {
 	requires java.net.http;
     opens model to com.google.gson;
 	opens application to javafx.graphics, javafx.fxml;
-	 
+	requires WaifUPnP;
     exports control;
     opens control to javafx.graphics, javafx.fxml;
 }
