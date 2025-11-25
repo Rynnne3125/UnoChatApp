@@ -2,7 +2,7 @@ package coreapp.model.player;
 
 import coreapp.model.cards.Card;
 import coreapp.model.enums.Color;
-import model.User;
+import coreapp.model.user.User;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,35 +1,15 @@
 package application;
 
-import java.io.IOException;
-import java.util.Random;
-
-import control.NewsController;
-import coreapp.view.NumberOfPlayersView;
-import javafx.animation.Animation;
-import javafx.animation.FadeTransition;
-import javafx.animation.RotateTransition;
-import javafx.animation.ScaleTransition;
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.GaussianBlur;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.effect.InnerShadow;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
@@ -42,6 +22,13 @@ import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
+import java.util.Random;
+
+import control.NewsController;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import java.io.IOException;
 public class UnoGameMenu extends Application {
 
     private Stage primaryStage;
@@ -87,10 +74,7 @@ public class UnoGameMenu extends Application {
         Button btnPlay = createMenuButton("PLAY NOW", UNO_GREEN, "▶");
         Button btnCommunity = createMenuButton("CỘNG ĐỒNG", UNO_BLUE, "💬"); // Nút chuyển sang Chat
         Button btnNews = createMenuButton("NEWS",UNO_RED, "📰");
-        btnPlay.setOnAction(e -> {
-            primaryStage.close(); // Đóng menu đẹp này lại
-            new NumberOfPlayersView(); // Mở màn hình chọn số người chơi (Logic gốc)
-        });
+
         // Xử lý sự kiện chuyển sang UnoChatApp
         btnCommunity.setOnAction(e -> switchToChatApp());
 

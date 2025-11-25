@@ -23,8 +23,6 @@ import java.util.ResourceBundle;
 
 import application.Main;
 import application.UnoGameMenu;
-import coreapp.util.session.CurrentUserManager;
-import coreapp.view.GameTable;
 import dao.FirebaseNewsRest;
 import dao.FirebaseUserRest;
 
@@ -93,13 +91,6 @@ public class LoginController implements Initializable {
             System.err.println("Video load failed: " + e.getMessage());
         }
     }
-    public void loginSuccess(User user) {
-        CurrentUserManager.getInstance().setCurrentUser(user);
-
-        GameTable gameTable = new GameTable(4, "MySession");
-        gameTable.show();
-    }
-
 
     // 2. LOGIC ĐĂNG KÝ (BƯỚC 1: GỬI OTP)
     @FXML
@@ -236,7 +227,6 @@ public class LoginController implements Initializable {
                         
                     	showCustomAlert.showCustomAlert("Welcome, Gamer", "Login Successful! You are now Online.");
                     	Main.CurrentUser = loggedInUser;
-                    	CurrentUserManager.getInstance().setCurrentUser(loggedInUser);
                     	Stage stage = (Stage) loginUser.getScene().getWindow();
                         // Khởi tạo Menu và chạy trên Stage hiện tại
                         UnoGameMenu gameMenu = new UnoGameMenu();

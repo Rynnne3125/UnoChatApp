@@ -15,7 +15,6 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
-import javafx.stage.Stage;
 import coreapp.util.constants.FontConstants;
 import coreapp.util.constants.ImagePath;
 import coreapp.util.constants.UITexts;
@@ -24,12 +23,9 @@ import coreapp.util.constants.WindowConstants;
 import coreapp.util.ui.UIUtils;
 import coreapp.util.ui.toaster.Toaster;
 
-// IMPORT MENU MỚI
-import application.UnoGameMenu;
-
 /**
  * The NumberOfPlayersView class represents a stage for selecting the number of
- * players in a game.
+ * players in a game (JavaFX version).
  */
 public class NumberOfPlayersView extends BaseFrame {
 
@@ -38,38 +34,31 @@ public class NumberOfPlayersView extends BaseFrame {
     private final Font customFont;
     private Toaster toaster;
     private Pane mainPanel;
+
     public NumberOfPlayersView() {
         super(WindowConstants.NUMBER_OF_PLAYERS_WINDOW_TITLE);
         customFont = UIUtils.loadCustomFont(FontConstants.RechargeFontPath);
         initializeStage();
     }
-    private Image loadImage(String path) {
-        try {
-            // Dòng này giúp tìm ảnh trong thư mục src/images
-            return new Image(getClass().getResource(path).toExternalForm());
-        } catch (Exception e) {
-            System.err.println("Không tìm thấy ảnh: " + path);
-            return null; // Trả về null để không crash app
-        }
-    }
+
     @Override
     void initializeStage() {
         mainPanel = createGradientPanel();
         toaster = new Toaster(mainPanel);
         
-        VBox mainContainer = new VBox(20); // Tăng khoảng cách giữa các phần tử
+        VBox mainContainer = new VBox(10);
         mainContainer.setAlignment(Pos.CENTER);
-        mainContainer.setPadding(new Insets(20));
 
-        // --- HEADER SECTION (BACK BUTTON + TITLE) ---
-        HBox headerPanel = new HBox(20);
-        headerPanel.setAlignment(Pos.CENTER_LEFT);
-        headerPanel.setPadding(new Insets(10));
+        // Play against bots label with back button
+        Label playAgainstBotsLabel = new Label(UITexts.PLAY_AGAINST_BOTS.toUpperCase());
+        playAgainstBotsLabel.setFont(Font.font(customFont.getFamily(), 50));
+        playAgainstBotsLabel.setTextFill(Color.CYAN);
+        playAgainstBotsLabel.setAlignment(Pos.CENTER);
 
-        // 1. Back Button
-        ImageView backImageView = new ImageView(loadImage(ImagePath.BACK_ICON));
-        backImageView.setFitWidth(40);
-        backImageView.setFitHeight(40);
+        Image backImage = new Image(ImagePath.BACK_ICON);
+        ImageView backImageView = new ImageView(backImage);
+        backImageView.setFitWidth(50);
+        backImageView.setFitHeight(50);
 
         Button goBackButton = new Button();
         goBackButton.setGraphic(backImageView);
@@ -77,136 +66,131 @@ public class NumberOfPlayersView extends BaseFrame {
         goBackButton.setPrefSize(50, 50);
         goBackButton.setCursor(Cursor.HAND);
 
-        // --- LOGIC QUAY LẠI MENU MỚI ---
         goBackButton.setOnAction(e -> {
-            dispose(); // Đóng cửa sổ hiện tại
-            try {
-                // Mở lại UnoGameMenu
-                new UnoGameMenu().start(new Stage());
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            dispose();
+            new MainMenu();
         });
 
-        // 2. Title Label
-        Label playAgainstBotsLabel = new Label(UITexts.PLAY_AGAINST_BOTS.toUpperCase());
-        playAgainstBotsLabel.setFont(Font.font(customFont.getFamily(), 40));
-        playAgainstBotsLabel.setTextFill(Color.CYAN);
-        
-        // Căn giữa tiêu đề
-        Region spacerLeft = new Region();
-        HBox.setHgrow(spacerLeft, Priority.ALWAYS);
-        Region spacerRight = new Region(); // Spacer ảo để đẩy title vào giữa
-        HBox.setHgrow(spacerRight, Priority.ALWAYS);
-        spacerRight.setPrefWidth(50); // Bù trừ cho nút back bên trái
+        HBox labelPanel = new HBox();
+        labelPanel.setAlignment(Pos.CENTER_LEFT);
+        labelPanel.setPadding(new Insets(10));
+        labelPanel.getChildren().addAll(goBackButton, playAgainstBotsLabel);
+        HBox.setHgrow(playAgainstBotsLabel, Priority.ALWAYS);
+        playAgainstBotsLabel.setAlignment(Pos.CENTER);
 
-        headerPanel.getChildren().addAll(goBackButton, spacerLeft, playAgainstBotsLabel, spacerRight);
-        mainContainer.getChildren().add(headerPanel);
+        mainContainer.getChildren().add(labelPanel);
 
-        // --- NUMBER SELECTION SECTION ---
-        VBox selectionBox = new VBox(10);
-        selectionBox.setAlignment(Pos.CENTER);
-
+        // Number of players text label
         Label numberOfBotsTextLabel = new Label(UITexts.NUMBER_OF_PLAYERS);
-        numberOfBotsTextLabel.setFont(Font.font(customFont.getFamily(), 25));
+        numberOfBotsTextLabel.setFont(Font.font(customFont.getFamily(), 30));
         numberOfBotsTextLabel.setTextFill(Color.WHITE);
-        
-        HBox numberControlPanel = new HBox(35);
-        numberControlPanel.setAlignment(Pos.CENTER);
+        numberOfBotsTextLabel.setAlignment(Pos.CENTER);
+        numberOfBotsTextLabel.setMaxWidth(Double.MAX_VALUE);
+        mainContainer.getChildren().add(numberOfBotsTextLabel);
 
-        ImageView decreaseImageView = new ImageView(loadImage(ImagePath.NUMBER_OF_PLAYERS_DECREMENT));
-        decreaseImageView.setFitWidth(60); decreaseImageView.setFitHeight(60);
+        // Number selection panel
+        HBox thirdPanel = new HBox(35);
+        thirdPanel.setAlignment(Pos.CENTER);
+        thirdPanel.setPadding(new Insets(20, 0, 20, 0));
+
+        int buttonSize = 70;
+
+        Image decreaseImage = new Image(ImagePath.NUMBER_OF_PLAYERS_DECREMENT);
+        ImageView decreaseImageView = new ImageView(decreaseImage);
+        decreaseImageView.setFitWidth(buttonSize);
+        decreaseImageView.setFitHeight(buttonSize);
 
         Button decreaseButton = new Button();
         decreaseButton.setGraphic(decreaseImageView);
         decreaseButton.setStyle("-fx-background-color: transparent;");
+        decreaseButton.setPrefSize(buttonSize, buttonSize);
         decreaseButton.setCursor(Cursor.HAND);
+
         decreaseButton.setOnAction(e -> {
             if (numberOfPlayers > 2) {
                 numberOfPlayers--;
-                updatePlayerCountLabel();
+                numberOfPlayersLabel.setText(String.valueOf(numberOfPlayers));
             }
         });
+        thirdPanel.getChildren().add(decreaseButton);
 
-        // Number Display
         numberOfPlayersLabel = new Label(String.valueOf(numberOfPlayers));
-        numberOfPlayersLabel.setFont(Font.font(customFont.getFamily(), 40));
-        numberOfPlayersLabel.setTextFill(Color.YELLOW); // Màu vàng cho nổi bật
-        numberOfPlayersLabel.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);");
+        numberOfPlayersLabel.setFont(Font.font(customFont.getFamily(), 23));
+        numberOfPlayersLabel.setTextFill(Color.WHITE);
+        numberOfPlayersLabel.setAlignment(Pos.CENTER);
+        thirdPanel.getChildren().add(numberOfPlayersLabel);
 
-        // Increase Button
-        ImageView increaseImageView = new ImageView(loadImage(ImagePath.NUMBER_OF_PLAYERS_INCREMENT));
-        increaseImageView.setFitWidth(60); increaseImageView.setFitHeight(60);
+        Image increaseImage = new Image(ImagePath.NUMBER_OF_PLAYERS_INCREMENT);
+        ImageView increaseImageView = new ImageView(increaseImage);
+        increaseImageView.setFitWidth(buttonSize);
+        increaseImageView.setFitHeight(buttonSize);
 
         Button increaseButton = new Button();
         increaseButton.setGraphic(increaseImageView);
         increaseButton.setStyle("-fx-background-color: transparent;");
+        increaseButton.setPrefSize(buttonSize, buttonSize);
         increaseButton.setCursor(Cursor.HAND);
+
         increaseButton.setOnAction(e -> {
             if (numberOfPlayers < 10) {
                 numberOfPlayers++;
-                updatePlayerCountLabel();
+                numberOfPlayersLabel.setText(String.valueOf(numberOfPlayers));
             }
         });
 
-        numberControlPanel.getChildren().addAll(decreaseButton, numberOfPlayersLabel, increaseButton);
-        selectionBox.getChildren().addAll(numberOfBotsTextLabel, numberControlPanel);
-        mainContainer.getChildren().add(selectionBox);
+        thirdPanel.getChildren().add(increaseButton);
+        mainContainer.getChildren().add(thirdPanel);
 
-        // --- SESSION NAME SECTION ---
-        VBox sessionBox = new VBox(10);
-        sessionBox.setAlignment(Pos.CENTER);
-        sessionBox.setPadding(new Insets(20, 0, 0, 0));
-
+        // Session name label
         Label nameOfSessionLabel = new Label(UITexts.NAME_OF_SESSION);
-        nameOfSessionLabel.setFont(Font.font(customFont.getFamily(), 25));
+        nameOfSessionLabel.setFont(Font.font(customFont.getFamily(), 30));
         nameOfSessionLabel.setTextFill(Color.WHITE);
+        nameOfSessionLabel.setAlignment(Pos.CENTER);
+        nameOfSessionLabel.setMaxWidth(Double.MAX_VALUE);
+        mainContainer.getChildren().add(nameOfSessionLabel);
 
+        // Session name field
+        HBox wrapper = new HBox();
+        wrapper.setAlignment(Pos.CENTER);
         TextField sessionNameField = new TextField();
-        sessionNameField.setFont(Font.font(customFont.getFamily(), 20));
-        sessionNameField.setAlignment(Pos.CENTER);
-        sessionNameField.setPrefSize(400, 60);
-        sessionNameField.setMaxWidth(400);
-        // Style đẹp hơn cho TextField
+        sessionNameField.setFont(Font.font(customFont.getFamily(), 23));
         sessionNameField.setStyle(
             "-fx-text-fill: white;" +
-            "-fx-background-color: rgba(0, 0, 0, 0.5);" +
-            "-fx-border-color: cyan;" +
-            "-fx-border-width: 2;" +
-            "-fx-border-radius: 15;" +
-            "-fx-background-radius: 15;" +
-            "-fx-prompt-text-fill: gray;"
+            "-fx-background-color: rgba(255, 255, 255, 0.2);" +
+            "-fx-border-color: white;" +
+            "-fx-border-radius: 10;" +
+            "-fx-background-radius: 10;"
         );
-        sessionNameField.setPromptText("Enter room name...");
+        sessionNameField.setAlignment(Pos.CENTER);
+        sessionNameField.setPrefSize(555, 90);
+        wrapper.getChildren().add(sessionNameField);
+        mainContainer.getChildren().add(wrapper);
 
-        sessionBox.getChildren().addAll(nameOfSessionLabel, sessionNameField);
-        mainContainer.getChildren().add(sessionBox);
-
-        // --- START BUTTON ---
-        ImageView startButtonImageView = new ImageView(loadImage(ImagePath.START_BUTTON));
-        startButtonImageView.setFitWidth(200); startButtonImageView.setFitHeight(80);
+        // Start game button
+        int buttonWidth = 240;
+        int buttonHeight = 90;
+        Image startButtonImage = new Image(ImagePath.START_BUTTON);
+        ImageView startButtonImageView = new ImageView(startButtonImage);
+        startButtonImageView.setFitWidth(buttonWidth);
+        startButtonImageView.setFitHeight(buttonHeight);
 
         Button startGameButton = new Button();
         startGameButton.setGraphic(startButtonImageView);
         startGameButton.setStyle("-fx-background-color: transparent;");
+        startGameButton.setPadding(Insets.EMPTY);
         startGameButton.setCursor(Cursor.HAND);
-        
-        // Hiệu ứng hover cho nút Start
-        startGameButton.setOnMouseEntered(e -> startGameButton.setScaleX(1.1));
-        startGameButton.setOnMouseExited(e -> startGameButton.setScaleX(1.0));
 
         startGameButton.setOnAction(e -> {
             String sessionName = sessionNameField.getText();
-            if (sessionName.trim().isEmpty()) {
+            if (sessionName.length() == 0) {
                 toaster.warn(WarningConstants.FILL_SESSION_NAME_WARNING);
             } else {
                 dispose();
-                // Vào bàn chơi chính
                 new GameTable(numberOfPlayers, sessionName);
             }
         });
 
-        VBox.setMargin(startGameButton, new Insets(30, 0, 0, 0));
+        VBox.setMargin(startGameButton, new Insets(0, 0, 10, 0));
         mainContainer.getChildren().add(startGameButton);
 
         mainPanel.getChildren().add(mainContainer);
@@ -216,20 +200,16 @@ public class NumberOfPlayersView extends BaseFrame {
         show();
     }
 
-    private void updatePlayerCountLabel() {
-        numberOfPlayersLabel.setText(String.valueOf(numberOfPlayers));
-    }
-
     private Pane createGradientPanel() {
         Pane panel = new Pane();
         panel.setPrefSize(WindowConstants.DEFAULT_WINDOW_WIDTH, WindowConstants.DEFAULT_WINDOW_HEIGHT);
         
-        // Thay đổi background sang màu tối (Dark/Space theme) giống UnoGameMenu
+        // Create gradient background
         Stop[] stops = new Stop[] { 
-            new Stop(0, Color.web("#2c3e50")), 
-            new Stop(1, Color.web("#000000"))
+            new Stop(0, Color.web("#1e3c72")), 
+            new Stop(1, Color.web("#2a5298"))
         };
-        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, stops);
+        LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
         BackgroundFill bgFill = new BackgroundFill(gradient, null, null);
         panel.setBackground(new Background(bgFill));
         
@@ -238,6 +218,6 @@ public class NumberOfPlayersView extends BaseFrame {
 
     @Override
     void initializeFrame() {
-        // Not used
+        // Not used for this view
     }
 }
