@@ -26,7 +26,7 @@ import coreapp.model.enums.ActionType;
 import coreapp.model.enums.WildType;
 import coreapp.model.player.Bot;
 import coreapp.model.player.Player;
-import coreapp.model.user.User;
+import model.User;
 import coreapp.util.constants.*;
 import coreapp.util.helpers.Logger;
 import coreapp.util.session.CurrentUserManager;
@@ -311,7 +311,7 @@ public class GameTable extends Stage {
         }
     }
 
-    private void updateUserStatistics(int totalScore) {
+    private void updateUserStatistics(int totalScore) { 
         // Logic database giữ nguyên
         var currentUser = CurrentUserManager.getInstance().getCurrentUser();
         try {

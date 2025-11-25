@@ -26,7 +26,7 @@ public class Bot extends Player {
      * @param user The user associated with the bot.
      * @param hand The initial hand of cards for the bot.
      */
-    public Bot(User user, ArrayList<Card> hand) {
+    public Bot(model.User user, ArrayList<Card> hand) {
         super(user, hand);
     }
 

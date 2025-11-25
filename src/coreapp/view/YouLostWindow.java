@@ -14,6 +14,7 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.text.Font;
+import application.Main;
 import coreapp.util.constants.FontConstants;
 import coreapp.util.constants.ImagePath;
 import coreapp.util.constants.WindowConstants;
@@ -54,7 +55,7 @@ class YouLostWindow extends BaseFrame {
         
         backButton.setOnAction(e -> {
             dispose();
-            new MainMenu();
+            new Main();
         });
 
         buttonPanel.getChildren().add(backButton);

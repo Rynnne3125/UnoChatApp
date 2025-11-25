@@ -2,6 +2,7 @@ package coreapp.util.ui;
 
 import java.awt.Color;
 import java.io.File;
+import java.net.URL;
 
 import coreapp.util.constants.FileConstants;
 import coreapp.util.helpers.Logger;
@@ -36,11 +37,18 @@ public class UIUtils {
      */
     public static Font loadCustomFont(String path) {
         try {
-            File fontFile = new File(path);
-            return Font.loadFont(fontFile.toURI().toString(), 14);
+            URL url = UIUtils.class.getResource(path);
+            if (url == null) {
+                System.err.println("Font not found: " + path);
+                return null;
+            }
+
+            Font font = Font.loadFont(url.toExternalForm(), 20);
+            return font;
         } catch (Exception e) {
-            Logger.log(e.getMessage(), FileConstants.ERROR_LOGS_FILE_PATH);
-            return Font.getDefault();
+            System.err.println("Error loading font: " + e.getMessage());
+            return null;
         }
     }
+
 }
