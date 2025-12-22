@@ -5,6 +5,7 @@ import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
@@ -98,27 +99,38 @@ public class UnoGameApp extends Application {
     private Label statusLabel, colorIndicator;
     private Text directionArrow;
 
-    private PlayerProfileUI playerProfile; 
-    private PlayerProfileUI leftProfile;   
-    private PlayerProfileUI rightProfile;  
-    
+    // Turn timer + UNO
+    private ProgressBar turnTimerBar;
+    private Timeline turnTimer;
+    private Button unoCallButton;
+    private int unoPendingForPlayer = -1;
+    private boolean unoAlreadyCalled = false;
+
+    // Quick in-room actions
+    private VBox chatPanel;
+    private VBox actionBar;
+
+    private PlayerProfileUI playerProfile;
+    private PlayerProfileUI leftProfile;
+    private PlayerProfileUI rightProfile;
+
     private HBox leftHandContainer;
     private HBox rightHandContainer;
 
     // --- GAME STATE ---
     private List<Card> deck = new ArrayList<>();
     private List<Card> discardPile = new ArrayList<>();
-    
-    private List<Card> myHand = new ArrayList<>();     
-    private List<Card> p1Hand = new ArrayList<>();     
-    private List<Card> p2Hand = new ArrayList<>();     
-    private List<Card> displayHand = new ArrayList<>(); 
-    
+
+    private List<Card> myHand = new ArrayList<>();
+    private List<Card> p1Hand = new ArrayList<>();
+    private List<Card> p2Hand = new ArrayList<>();
+    private List<Card> displayHand = new ArrayList<>();
+
     private java.util.Queue<NotificationTask> notificationQueue = new java.util.LinkedList<>();
     private boolean isShowingNotification = false;
 
-    private int currentPlayerIndex = 0; 
-    private int myIndex = 0; 
+    private int currentPlayerIndex = 0;
+    private int myIndex = 0;
     private int direction = 1;
     private CardColor currentWildColor = null;
     private boolean isAnimating = false;
@@ -130,7 +142,7 @@ public class UnoGameApp extends Application {
     // Host variables
     private List<Socket> clientSockets;
     private List<PrintWriter> clientWriters;
-    private boolean[] isPlayerBot = {false, false, false}; 
+    private boolean[] isPlayerBot = {false, false, false};
 
     // Client variables
     private Socket clientSocket;
@@ -190,7 +202,7 @@ public class UnoGameApp extends Application {
     public void start(Stage stage) {
         this.mainStage = stage;
         stage.setTitle("UNO Online - " + playerName + (isHost ? " (HOST)" : " (CLIENT)"));
-        
+
         // --- QUAN TRỌNG: UI PHẢI ĐƯỢC INIT TRƯỚC LOGIC HOST ---
         initializeUI();
 
@@ -202,15 +214,22 @@ public class UnoGameApp extends Application {
         }
     }
 
- // ================= UI SETUP =================
+    // ================= UI SETUP =================
     private void initializeUI() {
         BorderPane gameLayout = new BorderPane();
-        gameLayout.setStyle("-fx-background-color: " + BG_COLOR + ";");
+        String bgTheme = selectRandomTheme();
+        gameLayout.setStyle("-fx-background: " + bgTheme + ";");
 
         // --- TOP AREA ---
         HBox topArea = new HBox(150);
         topArea.setAlignment(Pos.CENTER);
         topArea.setPadding(new Insets(20));
+
+        // Turn timer bar centered on top
+        turnTimerBar = new ProgressBar(0);
+        turnTimerBar.setPrefWidth(220);
+        // Keep style simple to avoid cast issues on some JavaFX builds
+        turnTimerBar.setStyle("-fx-accent: #C8AA6E;");
 
         // 1. KHỞI TẠO Profile TRƯỚC (Sửa lỗi NPE)
         leftProfile = new PlayerProfileUI(
@@ -226,24 +245,27 @@ public class UnoGameApp extends Application {
         );
 
         // 2. KHỞI TẠO Container chứa bài úp
-        leftHandContainer = createCompactHandView();  
-        rightHandContainer = createCompactHandView(); 
+        leftHandContainer = createCompactHandView();
+        rightHandContainer = createCompactHandView();
 
         // Hiển thị sẵn bài úp (Optional)
         renderBackCards(leftHandContainer, 7, Pos.CENTER_LEFT);
         renderBackCards(rightHandContainer, 7, Pos.CENTER_RIGHT);
 
         // 3. ĐƯA VÀO WRAPPER (Bây giờ leftProfile và rightProfile đã khác null)
-        HBox leftWrapper = new HBox(10, leftProfile, leftHandContainer); 
+        HBox leftWrapper = new HBox(10, leftProfile, leftHandContainer);
         leftWrapper.setAlignment(Pos.CENTER_LEFT);
-        
-        HBox rightWrapper = new HBox(10, rightHandContainer, rightProfile); 
+
+        HBox rightWrapper = new HBox(10, rightHandContainer, rightProfile);
         rightWrapper.setAlignment(Pos.CENTER_RIGHT);
 
-        Region spacer = new Region(); 
+        Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        
+
         topArea.getChildren().addAll(leftWrapper, spacer, rightWrapper);
+        BorderPane overlayTop = new BorderPane();
+        overlayTop.setCenter(turnTimerBar);
+        VBox topContainer = new VBox(topArea, overlayTop);
 
         // --- CENTER AREA ---
         StackPane tableCenter = new StackPane();
@@ -263,7 +285,7 @@ public class UnoGameApp extends Application {
         statusLabel = createLabel("Connecting...", 18);
         statusLabel.setTextFill(Color.web(GOLD_COLOR));
         piles.getChildren().addAll(colorIndicator, statusLabel);
-        
+
         tableCenter.getChildren().addAll(directionArrow, piles);
 
         // --- BOTTOM AREA ---
@@ -279,35 +301,106 @@ public class UnoGameApp extends Application {
         HBox bottomArea = new HBox(20, playerProfile, scroll);
         bottomArea.setAlignment(Pos.CENTER_LEFT); bottomArea.setPadding(new Insets(10, 30, 20, 30));
 
-        gameLayout.setTop(topArea); gameLayout.setCenter(tableCenter); gameLayout.setBottom(bottomArea);
-        
+        gameLayout.setTop(topContainer); gameLayout.setCenter(tableCenter); gameLayout.setBottom(bottomArea);
+
         animationLayer = new Pane(); animationLayer.setPickOnBounds(false);
-        rootStack = new StackPane(gameLayout, animationLayer);
+        // Floating UNO button (hidden by default)
+        unoCallButton = new Button("UNO!");
+        unoCallButton.setStyle("-fx-background-color: #d13639; -fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold; -fx-background-radius: 30; -fx-padding: 10 22;");
+        unoCallButton.setVisible(false);
+        unoCallButton.setOnAction(e -> onUnoPressed());
+
+        // Chat panel (hidden by default)
+        chatPanel = new VBox(8);
+        chatPanel.setVisible(false);
+        chatPanel.setMouseTransparent(true); // avoid blocking table when hidden
+        chatPanel.setStyle("-fx-background-color: rgba(0,0,0,0.8); -fx-padding: 10; -fx-background-radius: 10;");
+        chatPanel.setMaxWidth(300); chatPanel.setPrefHeight(220);
+        Label chatTitle = createLabel("Chat", 14); chatTitle.setTextFill(Color.WHITE);
+        ScrollPane chatScroll = new ScrollPane(new VBox(6));
+        chatScroll.setFitToWidth(true);
+        chatScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        TextField chatInput = new TextField(); chatInput.setPromptText("Type message...");
+        chatInput.setOnAction(e -> {
+            String txt = chatInput.getText().trim();
+            if(!txt.isEmpty()) {
+                ((VBox)chatScroll.getContent()).getChildren().add(createLabel(playerName + ": " + txt, 12));
+                chatInput.clear();
+            }
+        });
+        chatPanel.getChildren().addAll(chatTitle, chatScroll, chatInput);
+
+        // Action bar (top-right)
+        actionBar = new VBox(10);
+        actionBar.setStyle("-fx-background-color: rgba(0,0,0,0.35); -fx-padding: 10; -fx-background-radius: 10;");
+        Button chatBtn = new Button("💬"); chatBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18; -fx-text-fill: white;");
+        chatBtn.setOnAction(e -> {
+            boolean show = !chatPanel.isVisible();
+            chatPanel.setVisible(show);
+            chatPanel.setMouseTransparent(!show);
+        });
+        Button addFriendBtn = new Button("➕"); addFriendBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18; -fx-text-fill: white;");
+        addFriendBtn.setOnAction(e -> {
+            new Thread(() -> {
+                if (leftProfile != null && !leftProfile.getName().equals("Waiting...")) {
+                    dao.FirebaseNewsRest.sendFriendRequest(playerName, leftProfile.getName());
+                }
+                if (rightProfile != null && !rightProfile.getName().equals("Waiting...")) {
+                    dao.FirebaseNewsRest.sendFriendRequest(playerName, rightProfile.getName());
+                }
+                Platform.runLater(() -> showStatusOverlay("Đã gửi lời mời kết bạn", 1.2));
+            }).start();
+        });
+        Button blockBtn = new Button("🚫"); blockBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18; -fx-text-fill: white;");
+        blockBtn.setOnAction(e -> {
+            new Thread(() -> {
+                if (leftProfile != null && !leftProfile.getName().equals("Waiting...")) {
+                    dao.FirebaseNewsRest.blockUser(playerName, leftProfile.getName());
+                }
+                if (rightProfile != null && !rightProfile.getName().equals("Waiting...")) {
+                    dao.FirebaseNewsRest.blockUser(playerName, rightProfile.getName());
+                }
+                Platform.runLater(() -> showStatusOverlay("Đã chặn người chơi", 1.2));
+            }).start();
+        });
+        actionBar.getChildren().addAll(chatBtn, addFriendBtn, blockBtn);
+
+        // Hide action bar in solo/AI rooms (both opponents are bots)
+        applyActionBarVisibility();
+
+        rootStack = new StackPane(gameLayout, animationLayer, unoCallButton, chatPanel, actionBar);
+        StackPane.setAlignment(unoCallButton, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(unoCallButton, new Insets(0, 30, 30, 0));
+        StackPane.setAlignment(chatPanel, Pos.TOP_LEFT);
+        StackPane.setMargin(chatPanel, new Insets(20,0,0,20));
+        StackPane.setAlignment(actionBar, Pos.TOP_RIGHT);
+        StackPane.setMargin(actionBar, new Insets(20,20,0,0));
         mainStage.setScene(new Scene(rootStack, 1200, 800));
         mainStage.show();
     }
 
     // ================= HOST LOGIC =================
     private void initializeGameHost() {
-    	leftProfile.updateInfo(guest2Name, guest2Avatar);
-    	rightProfile.updateInfo(guest1Name, guest1Avatar);
+        leftProfile.updateInfo(guest2Name, guest2Avatar);
+        rightProfile.updateInfo(guest1Name, guest1Avatar);
         initializeDeck();
         for (int i = 0; i < 7; i++) {
             myHand.add(drawOne()); p1Hand.add(drawOne()); p2Hand.add(drawOne());
         }
         displayHand.addAll(myHand);
-        
+
         if (clientWriters.size() > 0) clientWriters.get(0).println("INIT:1");
         if (clientWriters.size() > 1) clientWriters.get(1).println("INIT:2");
-        
-        String setupMsg = "GAME_SETUP:" + 
+
+        String setupMsg = "GAME_SETUP:" +
                 playerName + "|" + hostAvatar + "," +
                 (guest1Name != null ? guest1Name : "Bot Ahri") + "|" + (guest1Avatar != null ? guest1Avatar : IMG_AHRI) + "," +
                 (guest2Name != null ? guest2Name : "Bot Teemo") + "|" + (guest2Avatar != null ? guest2Avatar : IMG_TEEMO);
-        
+
         broadcast(setupMsg);
         updateAllClients("START");
-        updateUI(); 
+        updateUI();
+        applyActionBarVisibility();
     }
 
     private void startHostListener() {
@@ -329,9 +422,9 @@ public class UnoGameApp extends Application {
     }
 
     private void handleClientDisconnect(int pIndex) {
-        if (isPlayerBot[pIndex]) return; 
-        isPlayerBot[pIndex] = true; 
-        
+        if (isPlayerBot[pIndex]) return;
+        isPlayerBot[pIndex] = true;
+
         // Fallback về Bot
         String botName = (pIndex == 1) ? "Bot Ahri" : "Bot Teemo";
         String botAva = (pIndex == 1) ? IMG_AHRI : IMG_TEEMO;
@@ -342,13 +435,21 @@ public class UnoGameApp extends Application {
 
         Platform.runLater(() -> {
             statusLabel.setText("Player " + pIndex + " disconnect! Bot taking over.");
-            
+
             // Cập nhật UI Host
             if (pIndex == 1) rightProfile.updateInfo(botName, botAva);
             else leftProfile.updateInfo(botName, botAva);
 
             if (currentPlayerIndex == pIndex) botAutoPlay(pIndex);
+            applyActionBarVisibility();
         });
+    }
+
+    private void applyActionBarVisibility() {
+        // Hide friend/block/chat bar when all opponents are bots (solo mode)
+        boolean hide = isPlayerBot[1] && isPlayerBot[2];
+        actionBar.setVisible(!hide);
+        actionBar.setManaged(!hide);
     }
 
     private void handleClientMessage(int pIndex, String msg) {
@@ -359,7 +460,7 @@ public class UnoGameApp extends Application {
             Platform.runLater(() -> {
                 if (currentPlayerIndex == pIndex) processCardPlayed(pIndex, c, false);
             });
-        } 
+        }
         else if (msg.equals("DRAW")) {
             Platform.runLater(() -> {
                 if (currentPlayerIndex == pIndex) {
@@ -376,14 +477,22 @@ public class UnoGameApp extends Application {
             broadcast("COLOR:" + currentWildColor);
             Platform.runLater(() -> finishAction(new Card(CardColor.BLACK, CardType.WILD, -1)));
         }
+        else if (msg.equals("UNO_CALL")) {
+            // First-come UNO from client; broadcast to all
+            broadcast("UNO_CALLED:" + pIndex);
+            Platform.runLater(() -> {
+                unoPendingForPlayer = -1; unoAlreadyCalled = true; unoCallButton.setVisible(false);
+                showStatusOverlay(getProfileByIndex(pIndex).getName() + " HÔ: UNO!", 1.2);
+            });
+        }
     }
 
     private void botAutoPlay(int botIndex) {
-    	double speed = myHand.isEmpty() ? 0.3 : 1.2; 
-        
+        double speed = myHand.isEmpty() ? 0.3 : 1.2;
+
         PauseTransition pause = new PauseTransition(Duration.seconds(speed));
         pause.setOnFinished(e -> {
-        	List<Card> hand = getHandByIndex(botIndex);
+            List<Card> hand = getHandByIndex(botIndex);
             Card top = discardPile.get(discardPile.size() - 1);
             Card play = null;
             for (Card c : hand) { if (isValidMove(c, top)) { play = c; break; } }
@@ -417,7 +526,7 @@ public class UnoGameApp extends Application {
                 displayHand.clear();
                 displayHand.addAll(myHand);
             }
-            
+
             updateUI(); // Làm mới giao diện
 
             Runnable continueLogic = () -> {
@@ -431,13 +540,18 @@ public class UnoGameApp extends Application {
 
             if (hand.size() == 1) {
                 String name = (pIndex == myIndex ? "BẠN" : getProfileByIndex(pIndex).getName().toUpperCase());
+                // Show UNO button for all players view; host enforces who pressed first via message
+                unoPendingForPlayer = pIndex;
+                unoAlreadyCalled = false;
+                unoCallButton.setVisible(pIndex != -1);
                 showStatusOverlay(name + " HÔ: UNO!", 1.5, continueLogic);
             } else {
+                unoPendingForPlayer = -1; unoAlreadyCalled = false; unoCallButton.setVisible(false);
                 continueLogic.run();
             }
         });
     }
- // Trong class UnoGameApp, cập nhật các phương thức xử lý logic
+    // Trong class UnoGameApp, cập nhật các phương thức xử lý logic
 
     private void finishAction(Card c) {
         if (checkWinCondition()) return;
@@ -470,11 +584,11 @@ public class UnoGameApp extends Application {
                 // 1. Hiện thông báo phạt
                 showStatusOverlay(victimName + " BỊ PHẠT +" + amount, 1.5, () -> {
                     // 2. Sau khi thông báo ẩn, chạy bài bay về tay
-                    animatePenaltyDraw(victim, amount); 
+                    animatePenaltyDraw(victim, amount);
                     drawN(victim, amount);
                     refreshUserHand();
                     currentPlayerIndex = getNextIndex(); // Bỏ qua lượt nạn nhân
-                    
+
                     // 3. Đợi bài bay xong một chút rồi mới chuyển lượt
                     PauseTransition delay = new PauseTransition(Duration.millis(amount * 300));
                     delay.setOnFinished(e -> nextTurnStep.run());
@@ -546,16 +660,64 @@ public class UnoGameApp extends Application {
             turnOwner = "LƯỢT CỦA: " + profile.getName().toUpperCase();
             statusLabel.setTextFill(Color.LIGHTGRAY);
         }
-        
+
         statusLabel.setText(turnOwner);
+        startTurnTimer();
         showStatusOverlay(turnOwner, 1.0); // Hiển thị thông báo giữa màn hình cho rõ
-        
+
         // Logic cho Bot chơi tiếp
         if (currentPlayerIndex != myIndex && isPlayerBot[currentPlayerIndex]) {
             double speed = myHand.isEmpty() ? 0.5 : 1.5;
             PauseTransition pt = new PauseTransition(Duration.seconds(speed));
             pt.setOnFinished(e -> botAutoPlay(currentPlayerIndex));
             pt.play();
+        }
+    }
+
+    private void startTurnTimer() {
+        try { if (turnTimer != null) turnTimer.stop(); } catch (Exception ignored) {}
+        turnTimerBar.setProgress(0);
+        final double[] progress = {0.0};
+        turnTimer = new Timeline(
+                new javafx.animation.KeyFrame(Duration.ZERO, ev -> turnTimerBar.setProgress(0)),
+                new javafx.animation.KeyFrame(Duration.seconds(10), ev -> {
+                    turnTimerBar.setProgress(1);
+                    onTurnTimeout();
+                })
+        );
+        turnTimer.setCycleCount(1);
+        turnTimer.playFromStart();
+    }
+
+    private void cancelTurnTimer() {
+        if (turnTimer != null) turnTimer.stop();
+        turnTimerBar.setProgress(0);
+    }
+
+    private void onTurnTimeout() {
+        if (!isHost) return; // Host is authoritative
+        int idx = currentPlayerIndex;
+        // Draw 1 for the player who times out and skip turn
+        Card c = drawOne();
+        if (c != null) {
+            getHandByIndex(idx).add(c);
+            broadcast("DRAW:" + idx);
+            updateAllClients("HandUpdate");
+        }
+        showStatusOverlay("HẾT GIỜ! RÚT 1 LÁ", 1.2);
+        nextTurn();
+    }
+
+    private void onUnoPressed() {
+        if (unoPendingForPlayer == -1 || unoAlreadyCalled) return;
+        if (isHost) {
+            unoAlreadyCalled = true;
+            broadcast("UNO_CALLED:" + myIndex);
+            showStatusOverlay("" + getProfileByIndex(myIndex).getName() + " HÔ: UNO!", 1.5);
+            unoCallButton.setVisible(false);
+            unoPendingForPlayer = -1;
+        } else {
+            if (outToServer != null) outToServer.println("UNO_CALL");
         }
     }
 
@@ -606,7 +768,7 @@ public class UnoGameApp extends Application {
             // GAME_SETUP:Name0|Ava0,Name1|Ava1,Name2|Ava2
             String data = msg.substring(11);
             String[] parts = data.split(",");
-            
+
             String[] hData = parts[0].split("\\|");
             String[] g1Data = parts[1].split("\\|");
             String[] g2Data = parts[2].split("\\|");
@@ -642,13 +804,14 @@ public class UnoGameApp extends Application {
             currentPlayerIndex = Integer.parseInt(msg.split(":")[1]);
             updateUI();
             statusLabel.setText(currentPlayerIndex == myIndex ? "YOUR TURN!" : "Player " + currentPlayerIndex + "'s turn");
+            startTurnTimer();
         }
         else if (msg.startsWith("COUNTS:")) {
             String[] p = msg.split(":");
             int hCount = Integer.parseInt(p[1]);
             int p1Count = Integer.parseInt(p[2]);
             int p2Count = Integer.parseInt(p[3]);
-            
+
             // Cập nhật đúng vị trí dựa trên Index của mình
             Platform.runLater(() -> {
                 String[] pi = msg.split(":");
@@ -686,6 +849,11 @@ public class UnoGameApp extends Application {
             Node to = getAvatarNodeByIndex(who);
             animateCard(createCardBack(), from, to, null);
         }
+        else if (msg.startsWith("UNO_CALLED:")) {
+            // Someone called UNO
+            unoPendingForPlayer = -1; unoAlreadyCalled = true; unoCallButton.setVisible(false);
+            showStatusOverlay("UNO!", 1.0);
+        }
     }
 
     private void handleDrawClick() {
@@ -701,9 +869,9 @@ public class UnoGameApp extends Application {
                 displayHand.add(c);
                 broadcast("DRAW:0");
                 updateUI();
-                
+
                 // QUAN TRỌNG: Chỉ chuyển lượt sau khi rút xong và cập nhật UI
-                nextTurn(); 
+                nextTurn();
             });
         } else {
             // Client chỉ gửi yêu cầu, không tự ý chạy logic rút ở đây để tránh lặp
@@ -719,12 +887,12 @@ public class UnoGameApp extends Application {
     // ================= HELPERS =================
     private void updateUI() {
         playerProfile.setActive(currentPlayerIndex == myIndex);
-        
+
         int leftIdx = -1, rightIdx = -1;
-        if (isHost) { rightIdx = 1; leftIdx = 2; } 
+        if (isHost) { rightIdx = 1; leftIdx = 2; }
         else if (myIndex == 1) { rightIdx = 0; leftIdx = 2; }
         else if (myIndex == 2) { rightIdx = 0; leftIdx = 1; }
-        
+
         leftProfile.setActive(currentPlayerIndex == leftIdx);
         rightProfile.setActive(currentPlayerIndex == rightIdx);
 
@@ -784,7 +952,7 @@ public class UnoGameApp extends Application {
         box.setSpacing(-50); // Khoảng cách âm để bài xếp chồng (Overlap)
         box.setAlignment(alignment);
 
-        int maxDisplay = 7; 
+        int maxDisplay = 7;
         for (int i = 0; i < Math.min(count, maxDisplay); i++) {
             StackPane cardBack = createCardBack(0.5); // Bài Bot nhỏ bằng 50% bài User
             box.getChildren().add(cardBack);
@@ -794,7 +962,7 @@ public class UnoGameApp extends Application {
             Label more = new Label("+" + (count - maxDisplay));
             more.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16;");
             // Đẩy label ra ngoài một chút để không bị lá bài cuối che mất
-            HBox.setMargin(more, new Insets(0, 0, 0, 55)); 
+            HBox.setMargin(more, new Insets(0, 0, 0, 55));
             box.getChildren().add(more);
         }
     }
@@ -804,7 +972,7 @@ public class UnoGameApp extends Application {
         for (int i = 0; i < Math.min(count, maxDisplay); i++) {
             StackPane backCard = createCardBack(0.4); // Tạo mặt sau lá bài với tỉ lệ nhỏ
             // Hiệu ứng xếp chồng (overlapping)
-            if (i > 0) HBox.setMargin(backCard, new Insets(0, 0, 0, -25)); 
+            if (i > 0) HBox.setMargin(backCard, new Insets(0, 0, 0, -25));
             box.getChildren().add(backCard);
         }
         // Nếu Bot có nhiều bài hơn maxDisplay, hiển thị thêm số lượng
@@ -847,7 +1015,7 @@ public class UnoGameApp extends Application {
         Collections.shuffle(deck); discardPile.add(deck.remove(0));
     }
     private Card drawOne() {
-        if (deck.isEmpty()) { 
+        if (deck.isEmpty()) {
             if (discardPile.size() <= 1) return null;
             Card top = discardPile.remove(discardPile.size()-1); deck.addAll(discardPile); discardPile.clear(); discardPile.add(top); Collections.shuffle(deck);
         }
@@ -884,8 +1052,8 @@ public class UnoGameApp extends Application {
             Color mainColor = c.getFxColor();
             // Hiệu ứng Gradient cho nền lá bài
             bg.setFill(new LinearGradient(0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
-                new javafx.scene.paint.Stop(0, mainColor),
-                new javafx.scene.paint.Stop(1, mainColor.darker())));
+                    new javafx.scene.paint.Stop(0, mainColor),
+                    new javafx.scene.paint.Stop(1, mainColor.darker())));
 
             // Hình Oval trắng đặc trưng ở giữa
             Ellipse oval = new Ellipse(32, 48);
@@ -917,14 +1085,14 @@ public class UnoGameApp extends Application {
             s.getChildren().addAll(border, bg, oval, symbolNode, smallSymbol);
         } else {
             // Mặt sau lá bài chuẩn UNO
-        	bg.setFill(new LinearGradient(0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+            bg.setFill(new LinearGradient(0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
                     new javafx.scene.paint.Stop(0, Color.web("#D72600")),
                     new javafx.scene.paint.Stop(1, Color.web("#000000"))));
-                Text logo = new Text("UNO");
-                logo.setFont(Font.font("Arial Black", FontWeight.BOLD, 20));
-                logo.setFill(Color.YELLOW);
-                logo.setRotate(-30);
-                s.getChildren().addAll(border, bg, logo);
+            Text logo = new Text("UNO");
+            logo.setFont(Font.font("Arial Black", FontWeight.BOLD, 20));
+            logo.setFill(Color.YELLOW);
+            logo.setRotate(-30);
+            s.getChildren().addAll(border, bg, logo);
         }
 
         s.setEffect(new DropShadow(8, Color.web("#000000", 0.5)));
@@ -944,7 +1112,7 @@ public class UnoGameApp extends Application {
         TranslateTransition tt = new TranslateTransition(Duration.millis(600), cardNode);
         tt.setByX(toBounds.getMinX() - fromBounds.getMinX());
         tt.setByY(toBounds.getMinY() - fromBounds.getMinY());
-        
+
         // Thêm hiệu ứng xoay nhẹ khi bay cho đẹp
         cardNode.setRotate(new Random().nextInt(20) - 10);
 
@@ -955,7 +1123,7 @@ public class UnoGameApp extends Application {
         });
         tt.play();
     }
- // Vẽ ký hiệu Đổi chiều (Hai mũi tên ngược nhau)
+    // Vẽ ký hiệu Đổi chiều (Hai mũi tên ngược nhau)
     private Node createReverseSymbol() {
         StackPane container = new StackPane();
         container.setAlignment(Pos.CENTER);
@@ -963,9 +1131,9 @@ public class UnoGameApp extends Application {
         // Mũi tên trên hướng sang trái
         Path arrow1 = new Path();
         arrow1.getElements().addAll(
-            new MoveTo(0, 5), new LineTo(30, 5), // Thân
-            new MoveTo(0, 5), new LineTo(10, 0), // Cạnh đầu 1
-            new MoveTo(0, 5), new LineTo(10, 10) // Cạnh đầu 2
+                new MoveTo(0, 5), new LineTo(30, 5), // Thân
+                new MoveTo(0, 5), new LineTo(10, 0), // Cạnh đầu 1
+                new MoveTo(0, 5), new LineTo(10, 10) // Cạnh đầu 2
         );
         arrow1.setStroke(Color.WHITE);
         arrow1.setStrokeWidth(4);
@@ -973,9 +1141,9 @@ public class UnoGameApp extends Application {
         // Mũi tên dưới hướng sang phải (Xoay 180 độ)
         Path arrow2 = new Path();
         arrow2.getElements().addAll(
-            new MoveTo(0, 5), new LineTo(30, 5),
-            new MoveTo(0, 5), new LineTo(10, 0),
-            new MoveTo(0, 5), new LineTo(10, 10)
+                new MoveTo(0, 5), new LineTo(30, 5),
+                new MoveTo(0, 5), new LineTo(10, 0),
+                new MoveTo(0, 5), new LineTo(10, 10)
         );
         arrow2.setStroke(Color.WHITE);
         arrow2.setStrokeWidth(4);
@@ -1006,7 +1174,7 @@ public class UnoGameApp extends Application {
         Text t = new Text(val);
         t.setFont(Font.font("Arial Black", 30));
         t.setFill(Color.WHITE);
-        
+
         HBox cards = new HBox(-12);
         cards.setAlignment(Pos.CENTER);
         for(int i=0; i<2; i++) {
@@ -1033,7 +1201,7 @@ public class UnoGameApp extends Application {
         tt.setOnFinished(e -> { animationLayer.getChildren().remove(node); isAnimating = false; if (onFinish != null) onFinish.run(); });
         tt.play();
     }
- // Cách 1: Chỉ hiện thông báo (tự động điền null cho hành động tiếp theo)
+    // Cách 1: Chỉ hiện thông báo (tự động điền null cho hành động tiếp theo)
     private void showStatusOverlay(String msg, double seconds) {
         showStatusOverlay(msg, seconds, null);
     }
@@ -1046,149 +1214,158 @@ public class UnoGameApp extends Application {
         });
     }
 
-// Class phụ để lưu Task
-private static class NotificationTask {
-    String msg; double seconds; Runnable onComplete;
-    NotificationTask(String m, double s, Runnable c) { msg = m; seconds = s; onComplete = c; }
-}
-
-private void processNotificationQueue() {
-    if (isShowingNotification || notificationQueue.isEmpty()) return;
-
-    isShowingNotification = true;
-    NotificationTask task = notificationQueue.poll();
-
-    Label label = new Label(task.msg);
-    label.setStyle("-fx-background-color: rgba(9, 20, 40, 0.9); -fx-text-fill: #C8AA6E; " +
-                   "-fx-font-size: 35; -fx-padding: 25 50; -fx-background-radius: 50; " +
-                   "-fx-border-color: #C8AA6E; -fx-border-width: 3;");
-    label.setEffect(new DropShadow(20, Color.BLACK));
-    StackPane.setAlignment(label, Pos.CENTER);
-    
-    rootStack.getChildren().add(label);
-
-    FadeTransition fadeIn = new FadeTransition(Duration.seconds(0.4), label);
-    fadeIn.setFromValue(0.0); fadeIn.setToValue(1.0);
-    
-    PauseTransition stay = new PauseTransition(Duration.seconds(task.seconds));
-    
-    FadeTransition fadeOut = new FadeTransition(Duration.seconds(0.4), label);
-    fadeOut.setFromValue(1.0); fadeOut.setToValue(0.0);
-
-    javafx.animation.SequentialTransition seq = new javafx.animation.SequentialTransition(fadeIn, stay, fadeOut);
-    seq.setOnFinished(e -> {
-        rootStack.getChildren().remove(label);
-        isShowingNotification = false;
-        if (task.onComplete != null) task.onComplete.run(); // Chạy hành động tiếp theo (ví dụ nextTurn)
-        processNotificationQueue(); // Kiểm tra thông báo tiếp theo
-    });
-    seq.play();
-}
-private void animatePenaltyDraw(int victimIdx, int remaining) {
-    if (remaining <= 0) {
-        isAnimating = false; 
-        return;
+    // Class phụ để lưu Task
+    private static class NotificationTask {
+        String msg; double seconds; Runnable onComplete;
+        NotificationTask(String m, double s, Runnable c) { msg = m; seconds = s; onComplete = c; }
     }
 
-    isAnimating = true;
-    Node targetNode = getAvatarNodeByIndex(victimIdx);
-    StackPane cardBack = createCardBack(0.5);
+    private void processNotificationQueue() {
+        if (isShowingNotification || notificationQueue.isEmpty()) return;
 
-    animateCardMovement(cardBack, deckStack, targetNode, () -> {
-        Platform.runLater(() -> {
-            // Nếu nạn nhân là chính mình, phải cập nhật danh sách bài hiển thị
-            if (victimIdx == myIndex) {
-                displayHand.clear();
-                displayHand.addAll(myHand);
-            }
-            
-            updateUI(); 
-            animatePenaltyDraw(victimIdx, remaining - 1);
+        isShowingNotification = true;
+        NotificationTask task = notificationQueue.poll();
+
+        Label label = new Label(task.msg);
+        label.setMouseTransparent(true); // allow clicks to pass through during notification
+        label.setStyle("-fx-background-color: rgba(9, 20, 40, 0.9); -fx-text-fill: #C8AA6E; " +
+                "-fx-font-size: 35; -fx-padding: 25 50; -fx-background-radius: 50; " +
+                "-fx-border-color: #C8AA6E; -fx-border-width: 3;");
+        label.setEffect(new DropShadow(20, Color.BLACK));
+        StackPane.setAlignment(label, Pos.CENTER);
+
+        rootStack.getChildren().add(label);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.seconds(0.4), label);
+        fadeIn.setFromValue(0.0); fadeIn.setToValue(1.0);
+
+        PauseTransition stay = new PauseTransition(Duration.seconds(task.seconds));
+
+        FadeTransition fadeOut = new FadeTransition(Duration.seconds(0.4), label);
+        fadeOut.setFromValue(1.0); fadeOut.setToValue(0.0);
+
+        javafx.animation.SequentialTransition seq = new javafx.animation.SequentialTransition(fadeIn, stay, fadeOut);
+        seq.setOnFinished(e -> {
+            rootStack.getChildren().remove(label);
+            isShowingNotification = false;
+            if (task.onComplete != null) task.onComplete.run(); // Chạy hành động tiếp theo (ví dụ nextTurn)
+            processNotificationQueue(); // Kiểm tra thông báo tiếp theo
         });
-    });
-}
-private void refreshUserHand() {
-    Platform.runLater(() -> {
-        displayHand.clear();
-        displayHand.addAll(myHand);
-        updateUI();
-    });
-}
-private void showWinScreen(String msg) {
-    Platform.runLater(() -> {
-        // --- 1. OVERLAY NỀN MỜ ---
-        StackPane winOverlay = new StackPane();
-        winOverlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85);");
-        
-        VBox content = new VBox(30);
-        content.setAlignment(Pos.CENTER);
-
-        // --- 2. HIỆU ỨNG TEXT CHIẾN THẮNG ---
-        Text winText = new Text(msg.toUpperCase());
-        winText.setFont(Font.font("Arial Rounded MT Bold", FontWeight.EXTRA_BOLD, 70));
-        winText.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web("#F9C700")), // Vàng sáng
-                new Stop(1, Color.web("#D72600")))); // Đỏ cam
-        
-        winText.setStroke(Color.WHITE);
-        winText.setStrokeWidth(3);
-        
-        DropShadow ds = new DropShadow(20, Color.GOLD);
-        winText.setEffect(ds);
-
-        // Animation phóng to thu nhỏ cho chữ
-        ScaleTransition st = new ScaleTransition(Duration.millis(800), winText);
-        st.setFromX(0.5); st.setFromY(0.5);
-        st.setToX(1.1);   st.setToY(1.1);
-        st.setCycleCount(Animation.INDEFINITE);
-        st.setAutoReverse(true);
-        st.play();
-
-        // --- 3. NÚT QUAY LẠI MENU ---
-        Button btnBackToMenu = new Button("QUAY LẠI MENU");
-        btnBackToMenu.setFont(Font.font("System", FontWeight.BOLD, 20));
-        btnBackToMenu.setTextFill(Color.WHITE);
-        btnBackToMenu.setPrefSize(250, 60);
-        btnBackToMenu.setStyle("-fx-background-color: linear-gradient(#2ecc71, #27ae60); " +
-                               "-fx-background-radius: 30; -fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2;");
-        
-        btnBackToMenu.setCursor(javafx.scene.Cursor.HAND);
-        btnBackToMenu.setOnAction(e -> backToMenu());
-
-        // Hiệu ứng hover cho nút
-        btnBackToMenu.setOnMouseEntered(e -> btnBackToMenu.setScaleX(1.1));
-        btnBackToMenu.setOnMouseExited(e -> btnBackToMenu.setScaleX(1.0));
-
-        content.getChildren().addAll(winText, btnBackToMenu);
-        winOverlay.getChildren().add(content);
-        
-        // Hiệu ứng Fade In cho toàn bộ màn hình win
-        FadeTransition ft = new FadeTransition(Duration.millis(1000), winOverlay);
-        ft.setFromValue(0.0);
-        ft.setToValue(1.0);
-        
-        rootStack.getChildren().add(winOverlay);
-        ft.play();
-    });
-}
-
-// Logic quay trở lại Menu
-private void backToMenu() {
-    try {
-        // Đóng các kết nối nếu là Host hoặc Client
-        if (isHost) {
-            for (PrintWriter pw : clientWriters) pw.println("HOST_DISCONNECTED");
-        } else if (clientSocket != null) {
-            clientSocket.close();
-        }
-        
-        // Chuyển cảnh về UnoGameMenu
-        UnoGameMenu menu = new UnoGameMenu();
-        menu.start(mainStage);
-    } catch (Exception e) {
-        e.printStackTrace();
+        seq.play();
     }
-}
+    private void animatePenaltyDraw(int victimIdx, int remaining) {
+        if (remaining <= 0) {
+            isAnimating = false;
+            return;
+        }
+
+        isAnimating = true;
+        Node targetNode = getAvatarNodeByIndex(victimIdx);
+        StackPane cardBack = createCardBack(0.5);
+
+        animateCardMovement(cardBack, deckStack, targetNode, () -> {
+            Platform.runLater(() -> {
+                // Nếu nạn nhân là chính mình, phải cập nhật danh sách bài hiển thị
+                if (victimIdx == myIndex) {
+                    displayHand.clear();
+                    displayHand.addAll(myHand);
+                }
+
+                updateUI();
+                animatePenaltyDraw(victimIdx, remaining - 1);
+            });
+        });
+    }
+    private void refreshUserHand() {
+        Platform.runLater(() -> {
+            displayHand.clear();
+            displayHand.addAll(myHand);
+            updateUI();
+        });
+    }
+    private void showWinScreen(String msg) {
+        Platform.runLater(() -> {
+            // --- 1. OVERLAY NỀN MỜ ---
+            StackPane winOverlay = new StackPane();
+            winOverlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85);");
+
+            VBox content = new VBox(30);
+            content.setAlignment(Pos.CENTER);
+
+            // --- 2. HIỆU ỨNG TEXT CHIẾN THẮNG ---
+            Text winText = new Text(msg.toUpperCase());
+            winText.setFont(Font.font("Arial Rounded MT Bold", FontWeight.EXTRA_BOLD, 70));
+            winText.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                    new Stop(0, Color.web("#F9C700")), // Vàng sáng
+                    new Stop(1, Color.web("#D72600")))); // Đỏ cam
+
+            winText.setStroke(Color.WHITE);
+            winText.setStrokeWidth(3);
+
+            DropShadow ds = new DropShadow(20, Color.GOLD);
+            winText.setEffect(ds);
+
+            // Animation phóng to thu nhỏ cho chữ
+            ScaleTransition st = new ScaleTransition(Duration.millis(800), winText);
+            st.setFromX(0.5); st.setFromY(0.5);
+            st.setToX(1.1);   st.setToY(1.1);
+            st.setCycleCount(Animation.INDEFINITE);
+            st.setAutoReverse(true);
+            st.play();
+
+            // --- 3. NÚT QUAY LẠI MENU ---
+            Button btnBackToMenu = new Button("QUAY LẠI MENU");
+            btnBackToMenu.setFont(Font.font("System", FontWeight.BOLD, 20));
+            btnBackToMenu.setTextFill(Color.WHITE);
+            btnBackToMenu.setPrefSize(250, 60);
+            btnBackToMenu.setStyle("-fx-background-color: linear-gradient(#2ecc71, #27ae60); " +
+                    "-fx-background-radius: 30; -fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2;");
+
+            btnBackToMenu.setCursor(javafx.scene.Cursor.HAND);
+            btnBackToMenu.setOnAction(e -> backToMenu());
+
+            // Hiệu ứng hover cho nút
+            btnBackToMenu.setOnMouseEntered(e -> btnBackToMenu.setScaleX(1.1));
+            btnBackToMenu.setOnMouseExited(e -> btnBackToMenu.setScaleX(1.0));
+
+            content.getChildren().addAll(winText, btnBackToMenu);
+            winOverlay.getChildren().add(content);
+
+            // Hiệu ứng Fade In cho toàn bộ màn hình win
+            FadeTransition ft = new FadeTransition(Duration.millis(1000), winOverlay);
+            ft.setFromValue(0.0);
+            ft.setToValue(1.0);
+
+            rootStack.getChildren().add(winOverlay);
+            ft.play();
+        });
+    }
+
+    // Logic quay trở lại Menu
+    private void backToMenu() {
+        try {
+            if (isHost) {
+                for (PrintWriter pw : clientWriters) pw.println("HOST_DISCONNECTED");
+            } else if (clientSocket != null) {
+                clientSocket.close();
+            }
+            UnoGameMenu menu = new UnoGameMenu();
+            menu.start(mainStage);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String selectRandomTheme() {
+        String[] themes = {
+                "linear-gradient(to bottom right, #0a0e1a 0%, #1a2332 50%, #0f1923 100%)",
+                "linear-gradient(135deg, #1a0e2e 0%, #16213e 50%, #0f3460 100%)",
+                "linear-gradient(to bottom, #0d0221 0%, #1a0033 50%, #370617 100%)",
+                "linear-gradient(45deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+                "linear-gradient(to right, #0f0c29 0%, #302b63 50%, #24243e 100%)"
+        };
+        return themes[new Random().nextInt(themes.length)];
+    }
     private void showColorPickerDialog(Card playedCard) {
         Platform.runLater(() -> {
             VBox container = new VBox(20);
@@ -1224,7 +1401,7 @@ private void backToMenu() {
         StackPane s = new StackPane();
         Rectangle rect = new Rectangle(80, 120);
         rect.setArcWidth(15); rect.setArcHeight(15);
-        
+
         // Gán màu theo CardColor
         Color fxColor;
         switch(color) {
@@ -1244,34 +1421,34 @@ private void backToMenu() {
 
         s.getChildren().addAll(rect, t);
         s.setStyle("-fx-cursor: hand;");
-        
+
         // Hiệu ứng hover
         s.setOnMouseEntered(e -> s.setScaleX(1.1));
         s.setOnMouseExited(e -> s.setScaleX(1.0));
-        
+
         return s;
     }
     private class PlayerProfileUI extends VBox {
         private Circle border; private ImageView img; private Label nameLabel;;
         public PlayerProfileUI(String n, String url, Pos align) {
             setAlignment(align); setSpacing(5);
-            border = new Circle(42, Color.TRANSPARENT); 
-            border.setStroke(Color.web("#5c5b57")); 
+            border = new Circle(42, Color.TRANSPARENT);
+            border.setStroke(Color.web("#5c5b57"));
             border.setStrokeWidth(3);
-            img = new ImageView(new Image(url, true)); 
-            img.setFitWidth(80); img.setFitHeight(80); 
+            img = new ImageView(new Image(url, true));
+            img.setFitWidth(80); img.setFitHeight(80);
             img.setClip(new Circle(40,40,40));
-            nameLabel = new Label(n); 
-            nameLabel.setTextFill(Color.WHITE); 
+            nameLabel = new Label(n);
+            nameLabel.setTextFill(Color.WHITE);
             nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
             getChildren().addAll(new StackPane(border, img), nameLabel);
         }
         public String getName() {
             return nameLabel.getText();
         }
-        public void updateInfo(String n, String url) { 
-            this.nameLabel.setText(n); 
-            if(url != null) this.img.setImage(new Image(url)); 
+        public void updateInfo(String n, String url) {
+            this.nameLabel.setText(n);
+            if(url != null) this.img.setImage(new Image(url));
         }        public void setActive(boolean a) {
             if(a) { border.setStroke(Color.web(GOLD_COLOR)); border.setEffect(new Glow(0.8)); nameLabel.setTextFill(Color.web(GOLD_COLOR)); }
             else { border.setStroke(Color.web("#5c5b57")); border.setEffect(null); nameLabel.setTextFill(Color.WHITE); }

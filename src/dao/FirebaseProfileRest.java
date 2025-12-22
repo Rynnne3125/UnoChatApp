@@ -23,7 +23,7 @@ public class FirebaseProfileRest {
             // Giả định bạn lưu user theo key là username
             String path = BASE_URL + "users/" + username + ".json";
             String json = sendRequest(path, "GET", null);
-            
+
             if (json != null && !json.equals("null")) {
                 User user = gson.fromJson(json, User.class);
                 return user;
@@ -40,8 +40,32 @@ public class FirebaseProfileRest {
             String path = BASE_URL + "users/" + username + ".json";
             // Chỉ update trường specific thì dùng PATCH
             String jsonBody = String.format("{\"status_message\": \"%s\"}", statusMsg);
-            
+
             // Firebase Rest API hỗ trợ PATCH để update partial data
+            return sendRequest(path, "PATCH", jsonBody) != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Cập nhật ảnh đại diện (image_avatar)
+    public static boolean updateUserAvatar(String username, String avatarUrl) {
+        try {
+            String path = BASE_URL + "users/" + username + ".json";
+            String jsonBody = String.format("{\"image_avatar\": \"%s\"}", avatarUrl.replace("\\", "\\\\").replace("\"", "\\\""));
+            return sendRequest(path, "PATCH", jsonBody) != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Cập nhật bio
+    public static boolean updateUserBio(String username, String bio) {
+        try {
+            String path = BASE_URL + "users/" + username + ".json";
+            String jsonBody = String.format("{\"bio\": \"%s\"}", bio.replace("\\", "\\\\").replace("\"", "\\\""));
             return sendRequest(path, "PATCH", jsonBody) != null;
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,7 +79,7 @@ public class FirebaseProfileRest {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod(method);
-            
+
             if (jsonBody != null) {
                 conn.setRequestProperty("Content-Type", "application/json; utf-8");
                 conn.setDoOutput(true);

@@ -61,7 +61,7 @@ public class FirebaseNewsRest {
 
             // 2. Lấy toàn bộ Like Counts (Map<PostId, Integer>)
             String likesJson = sendRequest(BASE_URL + "likeCount.json", "GET", null);
-            
+
             // 3. Lấy toàn bộ Comments (Map<PostId, List<String>>)
             String commentsJson = sendRequest(BASE_URL + "comments.json", "GET", null);
 
@@ -97,7 +97,7 @@ public class FirebaseNewsRest {
                     } else {
                         p.setComments(new ArrayList<>());
                     }
-                    
+
                     postsList.add(p);
                 }
             }
@@ -172,7 +172,7 @@ public class FirebaseNewsRest {
             // 1. Lấy danh sách comment hiện tại từ node /comments/{postId}
             String pathGet = BASE_URL + "comments/" + postId + ".json";
             String currentCommentsJson = sendRequest(pathGet, "GET", null);
-            
+
             List<String> comments = new ArrayList<>();
             if (currentCommentsJson != null && !currentCommentsJson.equals("null")) {
                 Type listType = new TypeToken<List<String>>(){}.getType();
@@ -214,7 +214,7 @@ public class FirebaseNewsRest {
             String jsonResponse = sendRequest(BASE_URL + "users/" + username + ".json", "GET", null);
             if (jsonResponse != null && !jsonResponse.equals("null")) {
                 User user = gson.fromJson(jsonResponse, User.class);
-                
+
                 if (user != null && (user.getUsername() == null || user.getUsername().isEmpty())) {
                     user.setUsername(username);
                 }
@@ -283,7 +283,7 @@ public class FirebaseNewsRest {
             // URL MỚI: friends/{user}/{friend}
             String path1 = BASE_URL + "friends/" + username + "/" + friendUsername + ".json";
             String path2 = BASE_URL + "friends/" + friendUsername + "/" + username + ".json";
-            
+
             sendRequest(path1, "PUT", gson.toJson(true));
             return sendRequest(path2, "PUT", gson.toJson(true));
         } catch (Exception e) {
@@ -320,7 +320,7 @@ public class FirebaseNewsRest {
             if (jsonResponse != null && !jsonResponse.equals("null")) {
                 Type type = new TypeToken<Map<String, Boolean>>(){}.getType();
                 Map<String, Boolean> friendsMap = gson.fromJson(jsonResponse, type);
-                
+
                 if (friendsMap != null) {
                     // 2. Với mỗi friend username, lấy thông tin User đầy đủ
                     for (String friendUsername : friendsMap.keySet()) {
@@ -336,20 +336,27 @@ public class FirebaseNewsRest {
         }
         return friendsList;
     }
-    
+
     /**
      * Hủy kết bạn - Xóa friend ở cả 2 phía (quan hệ 2 chiều)
      */
     public static boolean unfriend(String username, String friendUsername) {
         try {
-            // Xóa ở cả 2 phía
             String path1 = BASE_URL + "friends/" + username + "/" + friendUsername + ".json";
             String path2 = BASE_URL + "friends/" + friendUsername + "/" + username + ".json";
-            
             sendRequest(path1, "DELETE", null);
             sendRequest(path2, "DELETE", null);
-            
             return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean blockUser(String username, String blockedUsername) {
+        try {
+            String path = BASE_URL + "blacklist/" + username + "/" + blockedUsername + ".json";
+            return sendRequest(path, "PUT", gson.toJson(true)) != null;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -366,7 +373,7 @@ public class FirebaseNewsRest {
             conn.setRequestMethod(method);
             conn.setConnectTimeout(20000);
             conn.setReadTimeout(20000);
-            
+
             if (jsonBody != null) {
                 conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
                 conn.setDoOutput(true);
@@ -377,14 +384,14 @@ public class FirebaseNewsRest {
             }
 
             int responseCode = conn.getResponseCode();
-            
+
             BufferedReader br;
             if (responseCode >= 200 && responseCode < 300) {
                 br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
             } else {
                 br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
             }
-            
+
             StringBuilder response = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) {

@@ -63,7 +63,7 @@ public class UnoGameMenu extends Application {
 
         // Logo UNO
         StackPane logo = createUnoLogo();
-        
+
         // Phần nhập thông tin người chơi (Client Test)
         VBox playerSetupBox = createPlayerSetup();
 
@@ -83,12 +83,12 @@ public class UnoGameMenu extends Application {
         actionButtons.getChildren().addAll(btnPlay, btnCommunity, btnNews);
 
         mainContent.getChildren().addAll(logo, playerSetupBox, actionButtons);
-        
+
         // Hiệu ứng mờ kính (Glassmorphism) cho box chính
         StackPane glassPanel = new StackPane(mainContent);
         glassPanel.setMaxSize(800, 600);
         glassPanel.setStyle("-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 30; -fx-border-radius: 30; -fx-border-color: rgba(255,255,255,0.2); -fx-border-width: 1;");
-        
+
         root.getChildren().add(glassPanel);
 
         Scene scene = new Scene(root, 1024, 768);
@@ -119,14 +119,14 @@ public class UnoGameMenu extends Application {
             e.printStackTrace();
         }
     }
- // --- LOGIC CHUYỂN CẢNH SANG CHAT APP ---
- // Tìm đến hàm này trong UnoGameMenu.java và thay thế:
+    // --- LOGIC CHUYỂN CẢNH SANG CHAT APP ---
+    // Tìm đến hàm này trong UnoGameMenu.java và thay thế:
     private void switchToGameApp() {
         try {
             // Lấy tên từ nameField (Bạn cần khai báo nameField là biến toàn cục hoặc lấy từ UI)
             // Ở đây tôi giả định lấy từ Main.CurrentUser hoặc mặc định
             String playerName = (Main.CurrentUser != null) ? Main.CurrentUser.getUsername() : "Player";
-            
+
             // Lấy avatar mặc định hoặc từ logic chọn avatar của bạn
             String playerAvatar = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Yasuo.png";
 
@@ -138,18 +138,18 @@ public class UnoGameMenu extends Application {
                     // Khởi tạo UnoGameApp với vai trò HOST (vì bắt đầu từ Menu)
                     // Các tham số: Tên, IsHost, Sockets list, Writers list, HostAvatar, Guest1Name, Guest1Avatar, Guest2Name, Guest2Avatar
                     UnoGameApp gameApp = new UnoGameApp(
-                        playerName, 
-                        true,                       // isHost
-                        new java.util.ArrayList<>(), // clientSockets (trống vì chưa có ai kết nối)
-                        new java.util.ArrayList<>(), // clientWriters
-                        playerAvatar,               // Avatar của bạn
-                        "Bot Ahri",                 // Guest 1 (Bot)
-                        "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Ahri.png",
-                        "Bot Teemo",                // Guest 2 (Bot)
-                        "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Teemo.png"
+                            playerName,
+                            true,                       // isHost
+                            new java.util.ArrayList<>(), // clientSockets (trống vì chưa có ai kết nối)
+                            new java.util.ArrayList<>(), // clientWriters
+                            playerAvatar,               // Avatar của bạn
+                            "Bot Ahri",                 // Guest 1 (Bot)
+                            "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Ahri.png",
+                            "Bot Teemo",                // Guest 2 (Bot)
+                            "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Teemo.png"
                     );
 
-                    gameApp.start(primaryStage); 
+                    gameApp.start(primaryStage);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -159,7 +159,7 @@ public class UnoGameMenu extends Application {
             e.printStackTrace();
         }
     }
- // --- LOGIC CHUYỂN CẢNH SANG NEWS VIEW ---
+    // --- LOGIC CHUYỂN CẢNH SANG NEWS VIEW ---
     private void switchToNews() {
         // Tạo hiệu ứng mờ dần (Fade Out) trước khi chuyển cảnh cho mượt
         FadeTransition ft = new FadeTransition(Duration.millis(300), primaryStage.getScene().getRoot());
@@ -183,7 +183,7 @@ public class UnoGameMenu extends Application {
                 primaryStage.setScene(scene);
                 primaryStage.setFullScreen(true);
                 primaryStage.centerOnScreen();
-                
+
                 // (Tùy chọn) Fade In lại nếu muốn
                 // FadeTransition ftIn = new FadeTransition(Duration.millis(300), root);
                 // ftIn.setFromValue(0.0); ftIn.setToValue(1.0); ftIn.play();
@@ -223,7 +223,7 @@ public class UnoGameMenu extends Application {
         StackPane logoContainer = new StackPane(textGroup);
         Rotate rotate = new Rotate(-10, 0, 0);
         logoContainer.getTransforms().add(rotate);
-        
+
         // Animation nhịp đập
         ScaleTransition st = new ScaleTransition(Duration.millis(1000), logoContainer);
         st.setFromX(1); st.setFromY(1);
@@ -239,7 +239,7 @@ public class UnoGameMenu extends Application {
         VBox box = new VBox(15);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(20));
-        
+
         Label lbl = new Label("THÔNG TIN NGƯỜI CHƠI");
         lbl.setTextFill(Color.WHITE);
         lbl.setFont(Font.font("System", FontWeight.BOLD, 18));
@@ -281,14 +281,14 @@ public class UnoGameMenu extends Application {
         btn.setFont(Font.font("System", FontWeight.BOLD, 16));
         btn.setTextFill(Color.WHITE);
         btn.setPrefSize(200, 60);
-        
+
         // CSS Style cho nút bấm bóng bẩy
         String cssColor = toHexString(baseColor);
         btn.setStyle(String.format(
-            "-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%)); " +
-            "-fx-background-radius: 30; " +
-            "-fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2; " +
-            "-fx-cursor: hand;", cssColor, cssColor
+                "-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%)); " +
+                        "-fx-background-radius: 30; " +
+                        "-fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2; " +
+                        "-fx-cursor: hand;", cssColor, cssColor
         ));
 
         // Hiệu ứng bóng
@@ -303,8 +303,8 @@ public class UnoGameMenu extends Application {
             st.setToX(1.1); st.setToY(1.1);
             st.play();
             btn.setStyle(String.format(
-                "-fx-background-color: linear-gradient(to bottom, derive(%s, 20%%), %s); " +
-                "-fx-background-radius: 30; -fx-border-color: yellow; -fx-border-radius: 30; -fx-border-width: 2;", cssColor, cssColor
+                    "-fx-background-color: linear-gradient(to bottom, derive(%s, 20%%), %s); " +
+                            "-fx-background-radius: 30; -fx-border-color: yellow; -fx-border-radius: 30; -fx-border-width: 2;", cssColor, cssColor
             ));
         });
 
@@ -313,8 +313,8 @@ public class UnoGameMenu extends Application {
             st.setToX(1.0); st.setToY(1.0);
             st.play();
             btn.setStyle(String.format(
-                "-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%)); " +
-                "-fx-background-radius: 30; -fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2;", cssColor, cssColor
+                    "-fx-background-color: linear-gradient(to bottom, %s, derive(%s, -30%%)); " +
+                            "-fx-background-radius: 30; -fx-border-color: white; -fx-border-radius: 30; -fx-border-width: 2;", cssColor, cssColor
             ));
         });
 
@@ -333,20 +333,20 @@ public class UnoGameMenu extends Application {
             card.setFill(colors[rand.nextInt(colors.length)]);
             card.setStroke(Color.WHITE);
             card.setStrokeWidth(3);
-            
+
             // Trang trí giữa lá bài
             Circle c = new Circle(20, Color.WHITE);
             c.setCenterX(30); c.setCenterY(45);
-            
+
             // Gom lại thành 1 group
             Pane cardGroup = new Pane(card, c);
-            
+
             // Vị trí ngẫu nhiên
             cardGroup.setLayoutX(rand.nextInt(1000));
             cardGroup.setLayoutY(rand.nextInt(700));
             cardGroup.setOpacity(0.3); // Mờ đi để làm nền
             cardGroup.setRotate(rand.nextInt(360));
-            
+
             // Hiệu ứng mờ ảo
             cardGroup.setEffect(new GaussianBlur(5));
 
@@ -369,9 +369,9 @@ public class UnoGameMenu extends Application {
 
     private String toHexString(Color c) {
         return String.format("#%02X%02X%02X",
-            (int) (c.getRed() * 255),
-            (int) (c.getGreen() * 255),
-            (int) (c.getBlue() * 255));
+                (int) (c.getRed() * 255),
+                (int) (c.getGreen() * 255),
+                (int) (c.getBlue() * 255));
     }
 
     public static void main(String[] args) {

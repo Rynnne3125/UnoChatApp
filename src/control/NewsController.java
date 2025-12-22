@@ -38,10 +38,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.ImagePattern;
@@ -59,9 +56,10 @@ import javafx.util.Duration;
 import model.Post;
 import model.User;
 import utils.CatboxUploader;
+import utils.NavigationHelper;
 
 public class NewsController {
-    
+
     // Static reference để cleanup khi exit app
     private static NewsController currentInstance = null;
 
@@ -77,10 +75,10 @@ public class NewsController {
     private Button goHomeButton;
     private ScheduledExecutorService pollingScheduler;
     private ExecutorService backgroundExecutor; // Quản lý tất cả background threads
-    
+
     // TỐI ƯU: Map để quản lý Node bạn bè, tránh xóa đi vẽ lại
-    private Map<String, Node> friendNodeMap = new HashMap<>(); 
-    
+    private Map<String, Node> friendNodeMap = new HashMap<>();
+
     // Biến tạm khi tạo post
     private File tempMediaFile = null;
     private String tempMediaType = null;
@@ -97,34 +95,34 @@ public class NewsController {
         // 1. Load Avatar User hiện tại (Resize nhỏ 100x100 để nhẹ)
         userAvatarCircle.setFill(Color.GRAY); // Default color
         try {
-        	Image img = ImageCache.get(user.getImageAvatar(), 100, 100);
-        	if (img != null) {
-        	    if (img.getProgress() >= 1.0 && !img.isError()) {
-        	        // Image đã load xong
-        	        try {
-        	            userAvatarCircle.setFill(new ImagePattern(img));
-        	        } catch (Exception e) {
-        	            // Giữ màu gray nếu lỗi
-        	        }
-        	    } else {
-        	        // Đợi image load xong
-        	        img.progressProperty().addListener((obs, oldVal, newVal) -> {
-        	            if (newVal.doubleValue() >= 1.0 && !img.isError()) {
-        	                Platform.runLater(() -> {
-        	                    try {
-        	                        userAvatarCircle.setFill(new ImagePattern(img));
-        	                    } catch (Exception e) {
-        	                        // Nếu vẫn lỗi, giữ màu gray
-        	                    }
-        	                });
-        	            }
-        	        });
-        	    }
-        	}
+            Image img = ImageCache.get(user.getImageAvatar(), 100, 100);
+            if (img != null) {
+                if (img.getProgress() >= 1.0 && !img.isError()) {
+                    // Image đã load xong
+                    try {
+                        userAvatarCircle.setFill(new ImagePattern(img));
+                    } catch (Exception e) {
+                        // Giữ màu gray nếu lỗi
+                    }
+                } else {
+                    // Đợi image load xong
+                    img.progressProperty().addListener((obs, oldVal, newVal) -> {
+                        if (newVal.doubleValue() >= 1.0 && !img.isError()) {
+                            Platform.runLater(() -> {
+                                try {
+                                    userAvatarCircle.setFill(new ImagePattern(img));
+                                } catch (Exception e) {
+                                    // Nếu vẫn lỗi, giữ màu gray
+                                }
+                            });
+                        }
+                    });
+                }
+            }
         } catch (Exception e) {
             // Giữ màu gray nếu có lỗi
         }
-        
+
         // Thêm event handler cho avatar: click để mở profile
         userAvatarCircle.setCursor(javafx.scene.Cursor.HAND);
         userAvatarCircle.setOnMouseClicked(e -> handleOpenProfile());
@@ -138,20 +136,20 @@ public class NewsController {
         // 3. Tạo cấu trúc Friends List
         HBox friendsHeader = new HBox(10);
         friendsHeader.setAlignment(Pos.CENTER_LEFT);
-        
+
         Label friendsTitle = new Label("Friends");
         friendsTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
         friendsTitle.setTextFill(Color.web("#65676b"));
-        
+
         Label onlineCount = new Label("(0 online)");
         onlineCount.setId("onlineCount");
         onlineCount.setStyle("-fx-font-size: 11px; -fx-text-fill: #31A24C;");
-        
+
         friendsHeader.getChildren().addAll(friendsTitle, onlineCount);
-        
+
         friendsListContainer = new VBox(8);
         friendsListContainer.setStyle("-fx-padding: 10 0 0 0;");
-        
+
         VBox friendsSection = new VBox(8);
         friendsSection.getChildren().addAll(friendsHeader, friendsListContainer);
 
@@ -159,18 +157,18 @@ public class NewsController {
 
         // 4. Khởi tạo ExecutorService để quản lý threads
         backgroundExecutor = Executors.newFixedThreadPool(5); // Giới hạn 5 threads
-        
+
         // 5. Lưu instance hiện tại để cleanup khi exit
         currentInstance = this;
-        
-        
+
+
         loadFriendsList(); // Load lần đầu
         // 6. Load dữ liệu ban đầu
         loadNewsFeed();
         // 7. Bắt đầu polling (check tin nhắn/online status)
         startNotificationPolling();
     }
-    
+
     /**
      * Static method để cleanup khi exit app
      */
@@ -181,9 +179,9 @@ public class NewsController {
         }
         ImageCache.clear();
     }
-    
+
     // ==================== CLEANUP & SHUTDOWN ====================
-    
+
     /**
      * Cleanup tất cả resources khi thoát app
      */
@@ -191,7 +189,7 @@ public class NewsController {
         try {
             // Stop polling
             stopPolling();
-            
+
             // Shutdown background executor - không chờ quá lâu để tránh hang
             if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
                 backgroundExecutor.shutdownNow();
@@ -210,10 +208,10 @@ public class NewsController {
         } finally {
             // Clear friend node map
             friendNodeMap.clear();
-            
+
             // Clear image cache
             ImageCache.clear();
-            
+
             // Clear temp files
             tempMediaFile = null;
             tempMediaType = null;
@@ -223,7 +221,7 @@ public class NewsController {
     // ==================== OPTIMIZED FRIENDS LIST ====================
 
     private void loadFriendsList() {
-    	if (backgroundExecutor == null || backgroundExecutor.isShutdown()) {
+        if (backgroundExecutor == null || backgroundExecutor.isShutdown()) {
             return;
         }
         Task<List<User>> loadFriendsTask = new Task<>() {
@@ -274,13 +272,13 @@ public class NewsController {
                     friendsListContainer.getChildren().add(newCard);
                 }
             }
-            
+
         });
 
         if (backgroundExecutor != null && !backgroundExecutor.isShutdown()) {
             backgroundExecutor.execute(loadFriendsTask);
         }
-      }
+    }
 
     private void updateFriendStatusUI(HBox card, boolean isOnline) {
         // Tìm circle status trong cấu trúc node và đổi màu
@@ -308,16 +306,16 @@ public class NewsController {
         card.setAlignment(Pos.CENTER_LEFT);
         card.setStyle("-fx-background-color: transparent; -fx-padding: 8 10; -fx-background-radius: 8; -fx-cursor: hand;");
         card.setMaxWidth(Double.MAX_VALUE);
-        
+
         card.setOnMouseEntered(e -> card.setStyle("-fx-background-color: #F0F2F5; -fx-padding: 8 10; -fx-background-radius: 8; -fx-cursor: hand;"));
         card.setOnMouseExited(e -> card.setStyle("-fx-background-color: transparent; -fx-padding: 8 10; -fx-background-radius: 8; -fx-cursor: hand;"));
-        
+
         StackPane avatarStack = new StackPane();
         Circle avatar = new Circle(18);
         avatar.setFill(Color.GRAY); // Default color
         avatar.setStroke(Color.web("#E4E6EB"));
         avatar.setStrokeWidth(2);
-        
+
         // TỐI ƯU: Load ảnh resize 40x40 và đợi load xong
         Image img = ImageCache.get(friend.getImageAvatar(), 40, 40);
         if (img != null) {
@@ -339,31 +337,31 @@ public class NewsController {
                 });
             }
         }
-        
+
         Circle statusBadge = new Circle(6);
         statusBadge.setFill(friend.isOnlineStatus() ? Color.web("#31A24C") : Color.web("#D13639"));
         statusBadge.setStroke(Color.WHITE);
         statusBadge.setStrokeWidth(2);
         statusBadge.setTranslateX(12);
         statusBadge.setTranslateY(12);
-        
+
         avatarStack.getChildren().addAll(avatar, statusBadge);
-        
+
         Label nameLabel = new Label(friend.getUsername());
         nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #e60026;");
         HBox.setHgrow(nameLabel, Priority.ALWAYS);
-        
+
         card.getChildren().addAll(avatarStack, nameLabel);
-        
+
         // Click vào friend card để hiện dialog với options
         card.setOnMouseClicked(e -> showFriendOptionsDialog(friend));
-        
+
         return card;
     }
 
     // ==================== POLLING (5s/lần) ====================
 
-private void startNotificationPolling() {
+    private void startNotificationPolling() {
         pollingScheduler = Executors.newSingleThreadScheduledExecutor();
         pollingScheduler.scheduleAtFixedRate(() -> {
             try {
@@ -374,18 +372,18 @@ private void startNotificationPolling() {
 
                 Map<String, String> requests = FirebaseNewsRest.getFriendRequests(currentUser.getUsername());
                 boolean hasRequests = requests != null && !requests.isEmpty();
-                
+
                 Platform.runLater(() -> {
                     // --- THÊM KIỂM TRA TẠI ĐÂY ---
                     if (backgroundExecutor == null || backgroundExecutor.isShutdown()) return;
-                    
+
                     if (notificationBadge != null) notificationBadge.setVisible(hasRequests);
-                    loadFriendsList(); 
+                    loadFriendsList();
                 });
             } catch (Exception e) {
                 System.err.println("Polling silent error: " + e.getMessage());
             }
-        }, 0, 5, TimeUnit.SECONDS); 
+        }, 0, 5, TimeUnit.SECONDS);
     }
     private void stopPolling() {
         if (pollingScheduler != null && !pollingScheduler.isShutdown()) {
@@ -434,7 +432,7 @@ private void startNotificationPolling() {
                 }
             }
         });
-        
+
         loadTask.setOnFailed(e -> {
             feedContainer.getChildren().clear();
             feedContainer.getChildren().add(new Label("Failed to load feed."));
@@ -445,14 +443,14 @@ private void startNotificationPolling() {
 
     private VBox createPostView(Post post) {
         VBox postBox = new VBox(12);
-        postBox.setStyle("-fx-background-color: #36393F; -fx-background-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 8, 0, 0, 2);");
+        postBox.setStyle("-fx-background-color: linear-gradient(to bottom, #1e2328 0%, #0f1923 100%); -fx-background-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 12, 0, 0, 4); -fx-border-color: #3c3c41; -fx-border-width: 1; -fx-border-radius: 12;");
         postBox.setPadding(new Insets(18));
         postBox.setMaxWidth(650);
 
         // --- Header ---
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
-        
+
         Circle avt = new Circle(22);
         avt.setFill(Color.GRAY); // Default color
         // TỐI ƯU: Avatar bài viết resize 50x50 và đợi load xong
@@ -479,12 +477,12 @@ private void startNotificationPolling() {
                     }
                 });
             }
-        } 
-        
+        }
+
         VBox info = new VBox(2);
         Label name = new Label(post.getAuthorUsername());
         name.setFont(Font.font("System", FontWeight.BOLD, 15));
-        
+
         long diff = System.currentTimeMillis() - post.getTimestamp();
         String timeStr = (diff < 60000) ? "Just now" : (diff / 60000) + " mins ago";
         if (diff > 3600000) timeStr = (diff / 3600000) + " hours ago";
@@ -492,14 +490,14 @@ private void startNotificationPolling() {
         time.setTextFill(Color.GRAY);
         time.setFont(Font.font(12));
         info.getChildren().addAll(name, time);
-        
+
         header.getChildren().addAll(avt, info);
 
         // --- Content ---
         Label content = new Label(post.getContent());
         content.setWrapText(true);
         content.setFont(Font.font(14));
-        content.setTextFill(Color.BLACK);   // <-- thêm dòng này
+        content.setTextFill(Color.web("#f0e6d2"));
         // --- Media ---
         Node mediaNode = null;
         if (post.getMediaUrl() != null && !post.getMediaUrl().isEmpty()) {
@@ -508,11 +506,11 @@ private void startNotificationPolling() {
                 iv.setFitWidth(620);
                 iv.setPreserveRatio(true);
                 iv.setStyle("-fx-background-radius: 8;");
-                
+
                 // TỐI ƯU: Load ảnh post resize chiều ngang 800px (chiều cao tự tính)
                 // Ảnh sẽ tự load async, không cần Task wrapper
                 iv.setImage(ImageCache.get(post.getMediaUrl(), 800, 0));
-                
+
                 mediaNode = iv;
             } else if ("VIDEO".equals(post.getMediaType())) {
                 Label videoLabel = new Label("🎥 Video Content");
@@ -538,13 +536,13 @@ private void startNotificationPolling() {
 
         // --- Comments ---
         VBox commentSection = new VBox(8);
-        commentSection.setStyle("-fx-background-color: #23272A; -fx-padding: 10; -fx-background-radius: 8;");
+        commentSection.setStyle("-fx-background-color: rgba(31, 35, 40, 0.6); -fx-padding: 12; -fx-background-radius: 10; -fx-border-color: #3c3c41; -fx-border-width: 1;");
         if (post.getComments() != null) {
             for (String oldCmt : post.getComments()) {
-                 Label l = new Label(oldCmt);
-                 l.setWrapText(true);
-                 l.setStyle("-fx-background-color: #99AAb5; -fx-padding: 8 12; -fx-background-radius: 12;");
-                 commentSection.getChildren().add(l);
+                Label l = new Label(oldCmt);
+                l.setWrapText(true);
+                l.setStyle("-fx-background-color: linear-gradient(to right, #0ac8b9, #0a9fa6); -fx-text-fill: #f0e6d2; -fx-padding: 8 12; -fx-background-radius: 10; -fx-font-size: 12;");
+                commentSection.getChildren().add(l);
             }
         }
         TextField cmtInput = new TextField();
@@ -575,23 +573,39 @@ private void startNotificationPolling() {
 
     @FXML
     private void handleCreatePost() {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Create Post");
+        if (feedContainer == null || feedContainer.getScene() == null) return;
 
-        VBox root = new VBox(15);
-        root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: white;");
+        Parent root = feedContainer.getScene().getRoot();
+        StackPane sceneRoot;
+        if (root instanceof StackPane) {
+            sceneRoot = (StackPane) root;
+        } else {
+            sceneRoot = new StackPane(root);
+            feedContainer.getScene().setRoot(sceneRoot);
+        }
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.65);");
+        overlay.setPickOnBounds(true);
 
+        VBox card = new VBox(12);
+        card.setMaxWidth(520);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20;");
+
+        HBox header = new HBox();
         Label title = new Label("Create New Post");
         title.setFont(Font.font("System", FontWeight.BOLD, 18));
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        Button closeBtn = new Button("✖");
+        closeBtn.setStyle("-fx-background-color: transparent; -fx-font-weight: bold; -fx-text-fill: #666;");
+        header.getChildren().addAll(title, spacer, closeBtn);
+
         TextArea contentArea = new TextArea();
         contentArea.setPromptText("What's on your mind?");
         contentArea.setWrapText(true);
 
         VBox previewBox = new VBox(10);
         previewBox.setAlignment(Pos.CENTER);
-        
+
         HBox mediaButtons = new HBox(10);
         Button selectImageBtn = new Button("📷 Image");
         Button removeMediaBtn = new Button("❌ Remove");
@@ -600,13 +614,13 @@ private void startNotificationPolling() {
         selectImageBtn.setOnAction(e -> {
             FileChooser fc = new FileChooser();
             fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
-            File file = fc.showOpenDialog(dialog);
+            File file = fc.showOpenDialog(feedContainer.getScene().getWindow());
             if (file != null) {
                 tempMediaFile = file;
                 tempMediaType = "IMAGE";
                 removeMediaBtn.setDisable(false);
                 ImageView preview = new ImageView(new Image(file.toURI().toString()));
-                preview.setFitWidth(200);
+                preview.setFitWidth(360);
                 preview.setPreserveRatio(true);
                 previewBox.getChildren().setAll(preview);
             }
@@ -618,11 +632,10 @@ private void startNotificationPolling() {
             removeMediaBtn.setDisable(true);
             previewBox.getChildren().clear();
         });
-
         mediaButtons.getChildren().addAll(selectImageBtn, removeMediaBtn);
 
         Button postBtn = new Button("Post");
-        postBtn.setStyle("-fx-background-color: #d13639; -fx-text-fill: white; -fx-font-weight: bold;");
+        postBtn.setStyle("-fx-background-color: #d13639; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 16; -fx-background-radius: 8;");
         postBtn.setOnAction(e -> {
             if (contentArea.getText().trim().isEmpty() && tempMediaFile == null) return;
             postBtn.setDisable(true);
@@ -638,19 +651,28 @@ private void startNotificationPolling() {
                 }
             };
             createPostTask.setOnSucceeded(ev -> {
-                dialog.close();
+                sceneRoot.getChildren().remove(overlay);
                 handleRefresh();
             });
             createPostTask.setOnFailed(ev -> {
-                 postBtn.setDisable(false);
-                 showCustomAlert(Alert.AlertType.ERROR, "Error", "Failed to post.");
+                postBtn.setDisable(false);
+                showCustomAlert(Alert.AlertType.ERROR, "Error", "Failed to post.");
             });
             backgroundExecutor.execute(createPostTask);
         });
 
-        root.getChildren().addAll(title, contentArea, mediaButtons, previewBox, postBtn);
-        dialog.setScene(new Scene(root, 450, 500));
-        dialog.show();
+        closeBtn.setOnAction(e -> {
+            sceneRoot.getChildren().remove(overlay);
+            // If we wrapped a BorderPane, unwrap to original root to avoid further casts
+            if (sceneRoot.getChildren().size() == 1 && sceneRoot.getChildren().get(0) == root && feedContainer.getScene().getRoot() == sceneRoot) {
+                feedContainer.getScene().setRoot(root);
+            }
+        });
+
+        card.getChildren().addAll(header, contentArea, mediaButtons, previewBox, postBtn);
+        overlay.getChildren().add(card);
+        StackPane.setAlignment(card, Pos.CENTER);
+        sceneRoot.getChildren().add(overlay);
     }
 
     // ==================== SEARCH & FRIEND SEARCH ====================
@@ -690,7 +712,7 @@ private void startNotificationPolling() {
         avatar.setFill(Color.GRAY); // Default color
         avatar.setStroke(Color.web("#E4E6EB"));
         avatar.setStrokeWidth(3);
-        
+
         // TỐI ƯU: Resize 100x100 và đợi load xong
         Image searchImg = ImageCache.get(user.getImageAvatar(), 100, 100);
         if (searchImg != null) {
@@ -716,7 +738,7 @@ private void startNotificationPolling() {
                 });
             }
         }
-        
+
         Circle statusBadge = new Circle(12);
         statusBadge.setFill(user.isOnlineStatus() ? Color.web("#31A24C") : Color.web("#D13639"));
         statusBadge.setStroke(Color.WHITE);
@@ -727,10 +749,10 @@ private void startNotificationPolling() {
 
         Label name = new Label(user.getUsername());
         name.setFont(Font.font(20));
-        
+
         Button actionBtn = new Button("Add Friend");
         actionBtn.setStyle("-fx-background-color: #d13639; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-        
+
         // Logic kiểm tra friend (như cũ)
         backgroundExecutor.execute(() -> {
             List<User> friends = FirebaseNewsRest.getFriendsList(currentUser.getUsername());
@@ -771,106 +793,106 @@ private void startNotificationPolling() {
         });
         backgroundExecutor.execute(checkTask);
     }
-    
-public void showFriendRequestsDialog(Map<String, String> requests) {
-    Stage dialog = new Stage();
-    Window owner = Stage.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
-    if (owner != null) {
-        dialog.initOwner(owner);
-    }
-    dialog.initModality(Modality.APPLICATION_MODAL);
-    dialog.initStyle(StageStyle.TRANSPARENT);
 
-    // --- Root Pane ---
-    StackPane rootPane = new StackPane();
-    rootPane.setStyle(
-        "-fx-background-color: linear-gradient(to bottom right, #0f1923, #0a0e27);" +
-        "-fx-background-radius: 20;" +
-        "-fx-border-color: linear-gradient(to right, #d13639, #f05a5a);" +
-        "-fx-border-width: 2;" +
-        "-fx-border-radius: 20;"
-    );
-    DropShadow glow = new DropShadow();
-    glow.setColor(Color.web("#d13639"));
-    glow.setRadius(20);
-    glow.setSpread(0.1);
-    rootPane.setEffect(glow);
-    rootPane.setPadding(new Insets(2));
-
-    // --- Content ---
-    VBox mainContent = new VBox(15);
-    mainContent.setPadding(new Insets(25));
-    mainContent.setStyle("-fx-background-radius: 18; -fx-background-color: transparent;");
-
-    // Header
-    Label titleLbl = new Label("PENDING REQUESTS");
-    titleLbl.setFont(Font.font("System", FontWeight.BOLD, 20));
-    titleLbl.setStyle("-fx-text-fill: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 5, 0, 0, 2);");
-    HBox headerBox = new HBox(titleLbl);
-    headerBox.setAlignment(Pos.CENTER);
-
-    // List Container
-    VBox requestsContainer = new VBox(12);
-    requestsContainer.setStyle("-fx-background-color: transparent;");
-
-    if (requests == null || requests.isEmpty()) {
-        VBox emptyState = new VBox(10);
-        emptyState.setAlignment(Pos.CENTER);
-        emptyState.setPadding(new Insets(40, 0, 40, 0));
-        Label emptyIcon = new Label("📭");
-        emptyIcon.setStyle("-fx-font-size: 40px;");
-        Label emptyText = new Label("No new friend requests.");
-        emptyText.setStyle("-fx-text-fill: #7a7d82; -fx-font-size: 14px; -fx-font-weight: bold;");
-        emptyState.getChildren().addAll(emptyIcon, emptyText);
-        requestsContainer.getChildren().add(emptyState);
-    } else {
-        for (Map.Entry<String, String> entry : requests.entrySet()) {
-            HBox row = createRequestRow(entry.getKey(), dialog);
-            requestsContainer.getChildren().add(row);
+    public void showFriendRequestsDialog(Map<String, String> requests) {
+        Stage dialog = new Stage();
+        Window owner = Stage.getWindows().stream().filter(Window::isShowing).findFirst().orElse(null);
+        if (owner != null) {
+            dialog.initOwner(owner);
         }
-    }
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initStyle(StageStyle.TRANSPARENT);
 
-    // --- ScrollPane (Nguyên nhân gây lỗi) ---
-    ScrollPane scrollPane = new ScrollPane(requestsContainer);
-    scrollPane.setFitToWidth(true);
-    scrollPane.setPrefHeight(350);
-    
-    // Style cơ bản cho ScrollPane
-    scrollPane.setStyle(
-        "-fx-background: transparent;" +
-        "-fx-background-color: transparent;" +
-        "-fx-padding: 0;" +
-        "-fx-hbar-policy: never;" +
-        "-fx-vbar-policy: as_needed;"
-    );
+        // --- Root Pane ---
+        StackPane rootPane = new StackPane();
+        rootPane.setStyle(
+                "-fx-background-color: linear-gradient(to bottom right, #0f1923, #0a0e27);" +
+                        "-fx-background-radius: 20;" +
+                        "-fx-border-color: linear-gradient(to right, #d13639, #f05a5a);" +
+                        "-fx-border-width: 2;" +
+                        "-fx-border-radius: 20;"
+        );
+        DropShadow glow = new DropShadow();
+        glow.setColor(Color.web("#d13639"));
+        glow.setRadius(20);
+        glow.setSpread(0.1);
+        rootPane.setEffect(glow);
+        rootPane.setPadding(new Insets(2));
 
-    // Close Button
-    Button closeBtn = new Button("CLOSE");
-    closeBtn.setPrefWidth(Double.MAX_VALUE);
-    closeBtn.setStyle("-fx-background-color: #1e2328; -fx-text-fill: #7a7d82; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;");
-    closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color: #2a2e35; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;"));
-    closeBtn.setOnMouseExited(e -> closeBtn.setStyle("-fx-background-color: #1e2328; -fx-text-fill: #7a7d82; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;"));
-    closeBtn.setOnAction(e -> dialog.close());
+        // --- Content ---
+        VBox mainContent = new VBox(15);
+        mainContent.setPadding(new Insets(25));
+        mainContent.setStyle("-fx-background-radius: 18; -fx-background-color: transparent;");
 
-    mainContent.getChildren().addAll(headerBox, scrollPane, closeBtn);
-    rootPane.getChildren().add(mainContent);
+        // Header
+        Label titleLbl = new Label("PENDING REQUESTS");
+        titleLbl.setFont(Font.font("System", FontWeight.BOLD, 20));
+        titleLbl.setStyle("-fx-text-fill: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 5, 0, 0, 2);");
+        HBox headerBox = new HBox(titleLbl);
+        headerBox.setAlignment(Pos.CENTER);
 
-    Scene scene = new Scene(rootPane, 420, 550);
-    scene.setFill(Color.TRANSPARENT);
-    dialog.setScene(scene);
+        // List Container
+        VBox requestsContainer = new VBox(12);
+        requestsContainer.setStyle("-fx-background-color: transparent;");
 
-    // === KHẮC PHỤC LỖI TẠI ĐÂY ===
-    // Chỉ chạy lệnh lookup khi cửa sổ đã hiển thị (Shown)
-    dialog.setOnShown(e -> {
-        javafx.scene.Node viewport = scrollPane.lookup(".viewport");
-        if (viewport != null) {
-            viewport.setStyle("-fx-background-color: transparent;");
+        if (requests == null || requests.isEmpty()) {
+            VBox emptyState = new VBox(10);
+            emptyState.setAlignment(Pos.CENTER);
+            emptyState.setPadding(new Insets(40, 0, 40, 0));
+            Label emptyIcon = new Label("📭");
+            emptyIcon.setStyle("-fx-font-size: 40px;");
+            Label emptyText = new Label("No new friend requests.");
+            emptyText.setStyle("-fx-text-fill: #7a7d82; -fx-font-size: 14px; -fx-font-weight: bold;");
+            emptyState.getChildren().addAll(emptyIcon, emptyText);
+            requestsContainer.getChildren().add(emptyState);
+        } else {
+            for (Map.Entry<String, String> entry : requests.entrySet()) {
+                HBox row = createRequestRow(entry.getKey(), dialog);
+                requestsContainer.getChildren().add(row);
+            }
         }
-    });
-    // ============================
 
-    dialog.show();
-}
+        // --- ScrollPane (Nguyên nhân gây lỗi) ---
+        ScrollPane scrollPane = new ScrollPane(requestsContainer);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefHeight(350);
+
+        // Style cơ bản cho ScrollPane
+        scrollPane.setStyle(
+                "-fx-background: transparent;" +
+                        "-fx-background-color: transparent;" +
+                        "-fx-padding: 0;" +
+                        "-fx-hbar-policy: never;" +
+                        "-fx-vbar-policy: as_needed;"
+        );
+
+        // Close Button
+        Button closeBtn = new Button("CLOSE");
+        closeBtn.setPrefWidth(Double.MAX_VALUE);
+        closeBtn.setStyle("-fx-background-color: #1e2328; -fx-text-fill: #7a7d82; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;");
+        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color: #2a2e35; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;"));
+        closeBtn.setOnMouseExited(e -> closeBtn.setStyle("-fx-background-color: #1e2328; -fx-text-fill: #7a7d82; -fx-font-weight: bold; -fx-background-radius: 10; -fx-cursor: hand; -fx-padding: 12;"));
+        closeBtn.setOnAction(e -> dialog.close());
+
+        mainContent.getChildren().addAll(headerBox, scrollPane, closeBtn);
+        rootPane.getChildren().add(mainContent);
+
+        Scene scene = new Scene(rootPane, 420, 550);
+        scene.setFill(Color.TRANSPARENT);
+        dialog.setScene(scene);
+
+        // === KHẮC PHỤC LỖI TẠI ĐÂY ===
+        // Chỉ chạy lệnh lookup khi cửa sổ đã hiển thị (Shown)
+        dialog.setOnShown(e -> {
+            javafx.scene.Node viewport = scrollPane.lookup(".viewport");
+            if (viewport != null) {
+                viewport.setStyle("-fx-background-color: transparent;");
+            }
+        });
+        // ============================
+
+        dialog.show();
+    }
     // --- Hàm hỗ trợ tạo từng dòng (Row) ---
     private HBox createRequestRow(String senderUsername, Stage dialog) {
         HBox row = new HBox(15);
@@ -878,11 +900,11 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
         row.setPadding(new Insets(12, 15, 12, 15));
         // Style cho thẻ: Nền tối hơn, bo góc
         row.setStyle(
-            "-fx-background-color: rgba(255,255,255,0.05);" +
-            "-fx-background-radius: 12;" +
-            "-fx-border-color: rgba(255,255,255,0.1);" +
-            "-fx-border-width: 1;" +
-            "-fx-border-radius: 12;"
+                "-fx-background-color: rgba(255,255,255,0.05);" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-border-color: rgba(255,255,255,0.1);" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 12;"
         );
 
         // 1. Avatar Placeholder (Hình tròn)
@@ -955,28 +977,28 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
         btn.setMaxSize(36, 36);
 
         String baseStyle =
-            "-fx-background-color: transparent;" +
-            "-fx-text-fill: " + colorHex + ";" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 16px;" +
-            "-fx-border-color: " + colorHex + ";" +
-            "-fx-border-width: 2;" +
-            "-fx-border-radius: 18;" + // Bán kính bằng một nửa kích thước để tròn
-            "-fx-background-radius: 18;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 0;";
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: " + colorHex + ";" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 16px;" +
+                        "-fx-border-color: " + colorHex + ";" +
+                        "-fx-border-width: 2;" +
+                        "-fx-border-radius: 18;" + // Bán kính bằng một nửa kích thước để tròn
+                        "-fx-background-radius: 18;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 0;";
 
         String hoverStyle =
-            "-fx-background-color: " + colorHex + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-font-weight: bold;" +
-            "-fx-font-size: 16px;" +
-            "-fx-border-color: " + colorHex + ";" +
-            "-fx-border-width: 2;" +
-            "-fx-border-radius: 18;" +
-            "-fx-background-radius: 18;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 0;";
+                "-fx-background-color: " + colorHex + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-font-size: 16px;" +
+                        "-fx-border-color: " + colorHex + ";" +
+                        "-fx-border-width: 2;" +
+                        "-fx-border-radius: 18;" +
+                        "-fx-background-radius: 18;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 0;";
 
         btn.setStyle(baseStyle);
         btn.setOnMouseEntered(e -> btn.setStyle(hoverStyle));
@@ -989,15 +1011,15 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
     private void handleLogout() {
         // Cleanup tất cả resources trước khi logout
         cleanup();
-        
+
         try {
-        	Stage stage = (Stage) searchField.getScene().getWindow();
-        	stage.setMaximized(true);
+            Stage stage = (Stage) searchField.getScene().getWindow();
+            stage.setMaximized(true);
             // Khởi tạo Menu và chạy trên Stage hiện tại
             UnoGameMenu gameMenu = new UnoGameMenu();
             gameMenu.start(stage);
-        } catch (Exception e) { 
-            e.printStackTrace(); 
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -1008,18 +1030,18 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
         Stage dialog = new Stage();
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Friend Options");
-        
+
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         root.setStyle("-fx-background-color: white;");
         root.setAlignment(Pos.CENTER);
-        
+
         Label titleLabel = new Label(friend.getUsername());
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-        
+
         HBox buttonsBox = new HBox(15);
         buttonsBox.setAlignment(Pos.CENTER);
-        
+
         // Button Direct Message
         Button messageBtn = new Button("💬 Direct Message");
         messageBtn.setStyle("-fx-background-color: #d13639; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;");
@@ -1027,24 +1049,24 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
             dialog.close(); // Đóng dialog option
             try {
                 // 1. Cleanup resource của NewsController hiện tại
-                cleanup(); 
-                
+                cleanup();
+
                 // 2. Truyền tên người muốn chat sang UnoChatApp
                 UnoChatApp.setTargetFriend(friend.getUsername());
 
                 // 3. Chuyển cảnh sang UnoChatApp
                 Stage stage = (Stage) searchField.getScene().getWindow();
                 stage.setMaximized(true);
-                
+
                 UnoChatApp chatApp = new UnoChatApp();
                 chatApp.start(stage);
-                
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 showCustomAlert(Alert.AlertType.ERROR, "Error", "Cannot open Chat App.");
             }
         });
-        
+
         // Button Unfriend
         Button unfriendBtn = new Button("❌ Unfriend");
         unfriendBtn.setStyle("-fx-background-color: #65676b; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;");
@@ -1052,19 +1074,19 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
             dialog.close();
             handleUnfriend(friend);
         });
-        
+
         // Button Cancel
         Button cancelBtn = new Button("Cancel");
         cancelBtn.setStyle("-fx-background-color: #E4E6EB; -fx-text-fill: #050505; -fx-font-weight: bold; -fx-padding: 10 20; -fx-cursor: hand;");
         cancelBtn.setOnAction(e -> dialog.close());
-        
+
         buttonsBox.getChildren().addAll(messageBtn, unfriendBtn, cancelBtn);
         root.getChildren().addAll(titleLabel, buttonsBox);
-        
+
         dialog.setScene(new Scene(root, 400, 150));
         dialog.show();
     }
-    
+
     /**
      * Xử lý unfriend
      */
@@ -1073,7 +1095,7 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
         confirmAlert.setTitle("Unfriend");
         confirmAlert.setHeaderText("Unfriend " + friend.getUsername() + "?");
         confirmAlert.setContentText("Are you sure you want to remove this friend?");
-        
+
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 // Disable UI trong khi xử lý
@@ -1099,58 +1121,40 @@ public void showFriendRequestsDialog(Map<String, String> requests) {
         alert.setContentText(message);
         alert.showAndWait();
     }
-    
+
+    // --- NAVIGATION BACK ---
+    @FXML
+    private void handleBack() {
+        if (menuContainer == null || menuContainer.getScene() == null) return;
+        Stage stage = (Stage) menuContainer.getScene().getWindow();
+        NavigationHelper.backToGameMenu(stage);
+    }
+
     @FXML
     private void handleOpenProfile() {
-        // Lấy scene và root hiện tại
-        Scene currentScene = searchField.getScene();
-        Parent currentRoot = currentScene.getRoot();
-        
-        // Tạo overlay
-        StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.8);"); // Nền đen mờ
-        overlay.setPrefSize(currentScene.getWidth(), currentScene.getHeight());
-        
-        // Tạo label với text
-        Label messageLabel = new Label("Let me view my Profile...");
-        messageLabel.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;");
-        messageLabel.setAlignment(Pos.CENTER);
-        
-        overlay.getChildren().add(messageLabel);
-        overlay.setAlignment(Pos.CENTER);
-        
-        // Wrap root trong StackPane để có thể thêm overlay
-        StackPane wrapper = new StackPane();
-        wrapper.getChildren().add(currentRoot);
-        wrapper.getChildren().add(overlay);
-        currentScene.setRoot(wrapper);
-        
-        // Fade in animation
-        overlay.setOpacity(0);
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(400), overlay);
-        fadeIn.setFromValue(0);
-        fadeIn.setToValue(1);
-        fadeIn.play();
-        
-        // Sau khi hiển thị overlay, chuyển sang profileView
-        fadeIn.setOnFinished(e -> {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/profileView.fxml"));
-                Parent root = loader.load();
-                
-                ProfileController controller = loader.getController();
-                controller.initData(Main.CurrentUser);
+        if (searchField == null || searchField.getScene() == null) return;
 
-                Stage stage = (Stage) currentScene.getWindow();
-                stage.setScene(new Scene(root));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                // Xóa overlay nếu có lỗi
-                wrapper.getChildren().remove(overlay);
-                currentScene.setRoot(currentRoot);
-                showCustomAlert(Alert.AlertType.ERROR, "Error", "Failed to load profile view.");
-            }
-        });
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/profileView.fxml"));
+            Parent root = loader.load();
+
+            ProfileController controller = loader.getController();
+            controller.initData(Main.CurrentUser);
+
+            Stage stage = (Stage) searchField.getScene().getWindow();
+            Scene profileScene = new Scene(root, stage.getScene().getWidth(), stage.getScene().getHeight());
+
+            root.setOpacity(0);
+            stage.setScene(profileScene);
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), root);
+            fadeIn.setFromValue(0);
+            fadeIn.setToValue(1);
+            fadeIn.play();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            showCustomAlert(Alert.AlertType.ERROR, "Error", "Failed to load profile view.");
+        }
     }
 }
 
@@ -1168,15 +1172,15 @@ class ImageCache {
 
     public static synchronized Image get(String url, double w, double h) {
         if (url == null || url.isEmpty()) return null;
-        
+
         // Key bao gồm URL và kích thước để phân biệt ảnh thumbnail và full
         String key = url + "_" + w + "_" + h;
-        
+
         if (!cache.containsKey(key)) {
             try {
                 // backgroundLoading = true (load ngầm, không đơ UI)
                 Image img = new Image(url, w, h, true, true, true);
-                
+
                 // Thêm error listener để xóa khỏi cache nếu load fail
                 img.errorProperty().addListener((obs, oldVal, newVal) -> {
                     if (newVal) {
@@ -1185,7 +1189,7 @@ class ImageCache {
                         }
                     }
                 });
-                
+
                 cache.put(key, img);
             } catch (Exception e) {
                 // Nếu có lỗi khi tạo Image, return null
@@ -1193,24 +1197,24 @@ class ImageCache {
                 return null;
             }
         }
-        
+
         Image cached = cache.get(key);
         // Kiểm tra nếu image bị lỗi thì xóa khỏi cache và return null
         if (cached != null && cached.isError()) {
             cache.remove(key);
             return null;
         }
-        
+
         return cached;
     }
-    
+
     /**
      * Clear toàn bộ cache để giải phóng RAM
      */
     public static synchronized void clear() {
         cache.clear();
     }
-    
+
     /**
      * Lấy số lượng ảnh trong cache
      */

@@ -1,14 +1,22 @@
 <component name="libraryTable">
   <library name="lib">
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/../../openjfx-22.0.1_windows-x64_bin-sdk/javafx-sdk-22.0.1/lib" />
-      <root url="jar://$PROJECT_DIR$/../../gson-2.10.1.jar!/" />
-      <root url="jar://$PROJECT_DIR$/../../jakarta.activation-1.2.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/../../jakarta.mail-1.6.7.jar!/" />
-      <root url="jar://$PROJECT_DIR$/../../WaifUPnP.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx.controls.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx.web.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx.fxml.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx-swt.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx.media.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib/javafx.graphics.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/jakarta.mail-2.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/gson-2.10.1.jar!/" />
+      <root url="file://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib" />
+      <root url="jar://$PROJECT_DIR$/../Downloads/jakarta.activation-2.0.1.jar!/" />
     </CLASSES>
     <JAVADOC />
+    <NATIVE>
+      <root url="file://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib" />
+    </NATIVE>
     <SOURCES />
-    <jarDirectory url="file://$PROJECT_DIR$/../../openjfx-22.0.1_windows-x64_bin-sdk/javafx-sdk-22.0.1/lib" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/../Downloads/javafx-sdk-17.0.16/lib" recursive="false" />
   </library>
 </component>
