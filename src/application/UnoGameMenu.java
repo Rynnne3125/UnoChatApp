@@ -120,17 +120,36 @@ public class UnoGameMenu extends Application {
         }
     }
  // --- LOGIC CHUYỂN CẢNH SANG CHAT APP ---
+ // Tìm đến hàm này trong UnoGameMenu.java và thay thế:
     private void switchToGameApp() {
         try {
-            // Tạo hiệu ứng fade out
+            // Lấy tên từ nameField (Bạn cần khai báo nameField là biến toàn cục hoặc lấy từ UI)
+            // Ở đây tôi giả định lấy từ Main.CurrentUser hoặc mặc định
+            String playerName = (Main.CurrentUser != null) ? Main.CurrentUser.getUsername() : "Player";
+            
+            // Lấy avatar mặc định hoặc từ logic chọn avatar của bạn
+            String playerAvatar = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Yasuo.png";
+
             FadeTransition ft = new FadeTransition(Duration.millis(300), primaryStage.getScene().getRoot());
             ft.setFromValue(1.0);
             ft.setToValue(0.0);
             ft.setOnFinished(e -> {
                 try {
-                    // Gọi UnoChatApp từ file bạn đã gửi
-                	UnoGameApp gameApp = new UnoGameApp();
-                	gameApp.start(primaryStage); // Sử dụng lại Stage hiện tại
+                    // Khởi tạo UnoGameApp với vai trò HOST (vì bắt đầu từ Menu)
+                    // Các tham số: Tên, IsHost, Sockets list, Writers list, HostAvatar, Guest1Name, Guest1Avatar, Guest2Name, Guest2Avatar
+                    UnoGameApp gameApp = new UnoGameApp(
+                        playerName, 
+                        true,                       // isHost
+                        new java.util.ArrayList<>(), // clientSockets (trống vì chưa có ai kết nối)
+                        new java.util.ArrayList<>(), // clientWriters
+                        playerAvatar,               // Avatar của bạn
+                        "Bot Ahri",                 // Guest 1 (Bot)
+                        "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Ahri.png",
+                        "Bot Teemo",                // Guest 2 (Bot)
+                        "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Teemo.png"
+                    );
+
+                    gameApp.start(primaryStage); 
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }

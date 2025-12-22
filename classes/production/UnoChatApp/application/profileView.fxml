@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.effect.Glow?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1100.0" style="-fx-background-color: #010A13;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="control.ProfileController">
+   
+   <!-- === HEADER: BANNER & USER INFO === -->
+   <top>
+      <StackPane alignment="BOTTOM_LEFT" prefHeight="250.0" prefWidth="1100.0" BorderPane.alignment="CENTER">
+         <!-- Background Banner Image -->
+         <ImageView fitHeight="250.0" fitWidth="1100.0" pickOnBounds="true" preserveRatio="false">
+            <effect>
+               <!-- Làm tối ảnh để chữ nổi bật -->
+               <Glow level="0.3" />
+            </effect>
+            <opacity>0.6</opacity>
+            <image>
+               <Image url="@../../img/uno_profile_banner.jpg" />
+            </image>
+         </ImageView>
+         
+         <!-- Gradient Overlay (Để phần dưới tối dần) -->
+         <Rectangle height="100.0" opacity="0.9" style="-fx-fill: linear-gradient(to top, #010A13, transparent);" width="1100.0" />
+
+         <!-- User Info Container -->
+         <HBox alignment="BOTTOM_LEFT" spacing="20.0">
+            <padding>
+               <Insets bottom="20.0" left="40.0" right="40.0" />
+            </padding>
+            
+            <!-- Avatar với khung Hextech -->
+            <StackPane>
+               <Circle fx:id="avatarCircle" fill="#1f93ff" radius="60.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0" />
+               <!-- Khung viền giả lập -->
+               <Circle fill="TRANSPARENT" radius="68.0" stroke="#c8aa6e" strokeType="INSIDE" strokeWidth="4.0">
+                  <effect>
+                     <DropShadow color="#c8aa6e" radius="10" spread="0.2" />
+                  </effect>
+               </Circle>
+               <!-- Level Badge -->
+               <StackPane alignment="CENTER" translateY="55">
+                   <Rectangle arcHeight="5" arcWidth="5" fill="#091428" height="25" stroke="#c8aa6e" strokeWidth="1" width="40" />
+                   <Label fx:id="levelLabel" style="-fx-font-weight: bold;" text="  Gamer  " textFill="#f0e6d2" />
+               </StackPane>
+            </StackPane>
+
+            <!-- Text Info -->
+            <VBox spacing="5.0">
+               <Label fx:id="usernameLabel" text="Summoner Name" textFill="#f0e6d2">
+                  <font>
+                     <Font name="System Bold" size="36.0" />
+                  </font>
+                  <effect>
+                     <DropShadow color="BLACK" height="5.0" radius="2.0" width="5.0" />
+                  </effect>
+               </Label>
+               
+               <HBox alignment="CENTER_LEFT" spacing="10.0">
+                   <Label fx:id="rankLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="Silver II" textFill="#cdbe91" />
+                   <Circle fill="#5c5b57" radius="3" />
+                   <Label fx:id="statusLabel" style="-fx-font-size: 14px;" text="Online" textFill="#0ac8b9" />
+               </HBox>
+               
+               <!-- Status Message Editable -->
+               <TextField fx:id="statusInput" promptText="Change status..." style="-fx-background-color: transparent; -fx-text-fill: #a09b8c; -fx-prompt-text-fill: #5c5b57; -fx-padding: 0;">
+                   <font><Font name="System Italic" size="12" /></font>
+               </TextField>
+            </VBox>
+            
+            <!-- Spacer -->
+            <HBox HBox.hgrow="ALWAYS" />
+            
+            <!-- Action Buttons -->
+            <VBox alignment="BOTTOM_RIGHT" spacing="10">
+                <Button style="-fx-background-color: #1E2328; -fx-text-fill: #cdbe91; -fx-border-color: #c8aa6e; -fx-border-width: 1; -fx-cursor: hand; -fx-font-weight: bold; -fx-background-radius: 0;" text="EDIT PROFILE">
+                   <padding><Insets bottom="10" left="20" right="20" top="10" /></padding>
+                </Button>
+                <Button onAction="#handleBack" style="-fx-background-color: transparent; -fx-text-fill: #5c5b57; -fx-cursor: hand; -fx-font-weight: bold;" text="⬅ BACK TO HOME" />
+            </VBox>
+         </HBox>
+      </StackPane>
+   </top>
+
+   <!-- === CENTER: CONTENT TABS === -->
+   <center>
+      <HBox spacing="20.0" BorderPane.alignment="CENTER">
+         <padding>
+            <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+         </padding>
+         
+         <!-- LEFT COLUMN: STATS & RANK (30%) -->
+         <VBox prefWidth="300.0" spacing="20.0">
+            <!-- Rank Card -->
+            <VBox alignment="CENTER" style="-fx-background-color: rgba(30, 35, 40, 0.8); -fx-border-color: #3C3C41; -fx-border-width: 1;">
+               <padding><Insets bottom="20" top="20" /></padding>
+               <Label style="-fx-font-size: 12px; -fx-font-weight: bold;" text="RANKED SOLO/DUO" textFill="#a09b8c" />
+               
+               <!-- Rank Icon Placeholder -->
+               <ImageView fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true">
+                  <image>
+                     <Image url="https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-silver.png" />
+                  </image>
+                  <effect><DropShadow color="#00000080" radius="10" /></effect>
+               </ImageView>
+               
+               <Label fx:id="rankTextBig" text="SILVER II" textFill="#f0e6d2">
+                  <font><Font name="System Bold" size="20.0" /></font>
+               </Label>
+            </VBox>
+            
+            <!-- Mastery/Point Card -->
+            <VBox spacing="10" style="-fx-background-color: rgba(30, 35, 40, 0.8); -fx-border-color: #3C3C41; -fx-border-width: 1;">
+                <padding><Insets bottom="15" left="15" right="15" top="15" /></padding>
+                <Label style="-fx-font-size: 12px; -fx-font-weight: bold;" text="RANK POINTS" textFill="#a09b8c" />
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label style="-fx-font-size: 20px;" text="⚡" textFill="#f0e6d2" />
+                    <Label fx:id="pointLabel" style="-fx-font-size: 24px; -fx-font-weight: bold;" text="1,250" textFill="#f0e6d2" />
+                </HBox>
+                <ProgressBar fx:id="rankprogressbar" prefWidth="280.0" progress="0.0" style="-fx-accent: #c8aa6e; -fx-control-inner-background: #091428; -fx-text-box-border: transparent;" />
+            </VBox>
+         </VBox>
+         
+         <!-- RIGHT COLUMN: MATCH HISTORY (70%) -->
+         <VBox spacing="15.0" HBox.hgrow="ALWAYS">
+             <!-- Tabs Headers -->
+             <HBox spacing="0" style="-fx-border-color: #3C3C41; -fx-border-width: 0 0 1 0;">
+                 <Button style="-fx-background-color: transparent; -fx-text-fill: #f0e6d2; -fx-font-weight: bold; -fx-border-color: #c8aa6e; -fx-border-width: 0 0 3 0; -fx-cursor: hand;" text="MATCH HISTORY">
+                     <padding><Insets bottom="10" left="15" right="15" top="10" /></padding>
+                 </Button>
+                 <Button style="-fx-background-color: transparent; -fx-text-fill: #5c5b57; -fx-font-weight: bold; -fx-cursor: hand;" text="STORIES">
+                     <padding><Insets bottom="10" left="15" right="15" top="10" /></padding>
+                 </Button>
+             </HBox>
+             
+             <!-- Match List Container -->
+             <ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="NEVER">
+                 <content>
+                     <VBox fx:id="matchHistoryContainer" spacing="10.0" style="-fx-background-color: transparent;">
+                         <!-- Items will be added by Controller -->
+                     </VBox>
+                 </content>
+             </ScrollPane>
+         </VBox>
+         
+      </HBox>
+   </center>
+   
+   <!-- Decoration Lines -->
+   <bottom>
+       <HBox alignment="CENTER" prefHeight="20" style="-fx-background-color: #010A13;">
+           <Line endX="1000" stroke="#3C3C41" strokeWidth="1" />
+       </HBox>
+   </bottom>
+
+</BorderPane>

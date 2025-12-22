@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../openjfx-22.0.1_windows-x64_bin-sdk/javafx-sdk-22.0.1/lib" />
+      <root url="jar://$PROJECT_DIR$/../../gson-2.10.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../jakarta.activation-1.2.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../jakarta.mail-1.6.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../WaifUPnP.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../../openjfx-22.0.1_windows-x64_bin-sdk/javafx-sdk-22.0.1/lib" recursive="false" />
+  </library>
+</component>
