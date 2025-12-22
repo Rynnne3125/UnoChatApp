@@ -47,7 +47,12 @@ public class UnoLobbyScreen extends Application {
     private static final String GREY_COLOR = "#5c5b57";
 
     private static final int PORT = 8888;
-
+    private static String initialPlayerName = "Hasagi"; 
+    public static void setInitialName(String name) {
+        if (name != null && !name.trim().isEmpty()) {
+            initialPlayerName = name;
+        }
+    }
     private Stage primaryStage;
     private TextField nameField;
     private ImageView myAvatarView;
@@ -164,7 +169,8 @@ public class UnoLobbyScreen extends Application {
         VBox slot = new VBox(10); slot.setAlignment(Pos.BOTTOM_CENTER);
         VBox topControls = new VBox(10); topControls.setAlignment(Pos.CENTER); topControls.setMinHeight(120);
 
-        nameField = new TextField("Hasagi"); nameField.setPromptText("Tên của bạn");
+        nameField = new TextField(initialPlayerName); 
+        nameField.setPromptText("Tên của bạn");
         nameField.setStyle("-fx-background-color: #1e2328; -fx-text-fill: white; -fx-border-color: " + GREY_COLOR + "; -fx-alignment: center;"); nameField.setMinWidth(250);
 
         Button btnHost = new Button("Tạo Phòng"); styleSmallButton(btnHost, GOLD_COLOR);
