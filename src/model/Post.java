@@ -58,11 +58,11 @@ public class Post {
 
     // Methods
     public void addLike() { this.likeCount++; }
-    public void addComment(String cmt) { 
+    public void addComment(String cmt) {
         if (this.comments == null) {
             this.comments = new ArrayList<>();
         }
-        this.comments.add(cmt); 
+        this.comments.add(cmt);
     }
 
     @Override

@@ -2,6 +2,9 @@
 <component inheritJdk="true">
 	<contentEntry url="file://$MODULE_DIR$"/>
 	<levels>
+		<level name="gson-2.10.1" value="project"/>
+		<level name="jakarta.mail-2.0.1" value="project"/>
 		<level name="lib" value="project"/>
+		<level name="jakarta.activation-2.0.1" value="project"/>
 	</levels>
 </component>

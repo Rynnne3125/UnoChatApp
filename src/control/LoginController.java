@@ -7,6 +7,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
@@ -39,6 +40,8 @@ public class LoginController implements Initializable {
     @FXML private TextField regEmail;
     @FXML private TextField regUser;
     @FXML private PasswordField regPass;
+    @FXML private TextField regPassVisible; // show password
+    @FXML private ToggleButton toggleRegPass;
 
     // --- CÁC TRƯỜNG NHẬP LIỆU OTP ---
     @FXML private Label otpMessageLabel;
@@ -55,17 +58,24 @@ public class LoginController implements Initializable {
     // --- BIẾN LƯU TRỮ TẠM THỜI ---
     private String serverOtpCode; // Mã OTP do hệ thống sinh ra
     private User tempUser;        // Thông tin user chờ đăng ký
-    
+
     @FXML private TextField loginUser;
     @FXML private PasswordField loginPass;
-    
+    @FXML private TextField loginPassVisible; // show password
+    @FXML private ToggleButton toggleLoginPass;
+    @FXML private HBox rootHBox;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupVideo();
+        setupPasswordToggles();
+        setupInputFormatters();
     }
+
     public TextField getloginUserTextField() {
-    	return this.loginUser;
+        return this.loginUser;
     }
+
     // 1. THIẾT LẬP VIDEO NỀN
     private void setupVideo() {
         try {
@@ -74,22 +84,66 @@ public class LoginController implements Initializable {
                 Media media = new Media(file.toURI().toString());
                 mediaPlayer = new MediaPlayer(media);
                 bgMediaView.setMediaPlayer(mediaPlayer);
-                
+
                 // Cấu hình Loop và Mute
                 mediaPlayer.setAutoPlay(true);
                 mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
                 mediaPlayer.setMute(true);
-                
+
                 // Resize video theo khung
                 bgMediaView.setPreserveRatio(false);
                 bgMediaView.fitWidthProperty().bind(rightPane.widthProperty());
                 bgMediaView.fitHeightProperty().bind(rightPane.heightProperty());
-                
+
                 mediaPlayer.play();
             }
         } catch (Exception e) {
             System.err.println("Video load failed: " + e.getMessage());
         }
+    }
+
+    // ===== UI ENHANCEMENTS =====
+    private void setupPasswordToggles() {
+        try {
+            if (toggleLoginPass != null && loginPass != null && loginPassVisible != null) {
+                bindPasswordToggle(loginPass, loginPassVisible, toggleLoginPass);
+            }
+            if (toggleRegPass != null && regPass != null && regPassVisible != null) {
+                bindPasswordToggle(regPass, regPassVisible, toggleRegPass);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void bindPasswordToggle(PasswordField pf, TextField tf, ToggleButton toggle) {
+        // Keep texts in sync both ways
+        try { tf.textProperty().bindBidirectional(pf.textProperty()); } catch (Exception ignored) {}
+        // Swap visibility/managed based on toggle
+        tf.managedProperty().bind(toggle.selectedProperty());
+        tf.visibleProperty().bind(toggle.selectedProperty());
+        pf.managedProperty().bind(toggle.selectedProperty().not());
+        pf.visibleProperty().bind(toggle.selectedProperty().not());
+    }
+
+    private void setupInputFormatters() {
+        // Remove spaces and limit length for usernames
+        TextFormatter<String> usernameFormatter = new TextFormatter<>(change -> {
+            String txt = change.getText();
+            if (txt != null && !txt.isEmpty()) change.setText(txt.replace(" ", ""));
+            String next = change.getControlNewText();
+            if (next != null && next.length() > 24) return null;
+            return change;
+        });
+        if (loginUser != null) loginUser.setTextFormatter(new TextFormatter<>(usernameFormatter.getFilter()));
+        if (regUser != null) regUser.setTextFormatter(new TextFormatter<>(usernameFormatter.getFilter()));
+
+        // Emails: strip spaces only
+        TextFormatter<String> emailFormatter = new TextFormatter<>(change -> {
+            String txt = change.getText();
+            if (txt != null && !txt.isEmpty()) change.setText(txt.replace(" ", ""));
+            return change;
+        });
+        if (regEmail != null) regEmail.setTextFormatter(emailFormatter);
+        if (forgotEmail != null) forgotEmail.setTextFormatter(new TextFormatter<>(emailFormatter.getFilter()));
     }
 
     // 2. LOGIC ĐĂNG KÝ (BƯỚC 1: GỬI OTP)
@@ -110,7 +164,7 @@ public class LoginController implements Initializable {
 
         // Lưu tạm thông tin
         tempUser = new User(email, user, pass);
-        
+
         // Bật chế độ Loading
         setLoading(true);
 
@@ -147,7 +201,7 @@ public class LoginController implements Initializable {
 
             new Thread(() -> {
                 boolean success = FirebaseUserRest.registerUser(tempUser);
-                
+
                 Platform.runLater(() -> {
                     setLoading(false);
                     if (success) {
@@ -180,7 +234,7 @@ public class LoginController implements Initializable {
                 String otp = EmailService.generateOTP();
                 EmailService.sendOTP(email, otp);
                 // (Lưu ý: Ở đây bạn cần logic để lưu OTP này lại và xử lý đổi mật khẩu tiếp theo)
-                
+
                 Platform.runLater(() -> {
                     setLoading(false);
                     showCustomAlert.showCustomAlert("Sent", "OTP sent to " + email + ". (Reset password logic needs implementation)");
@@ -219,20 +273,20 @@ public class LoginController implements Initializable {
                             showCustomAlert.showCustomAlert("Error", "Failed to load user information.");
                             return;
                         }
-                        
+
                         // Nếu avatar rỗng thì mới random (chỉ cho user mới đăng ký)
                         if (loggedInUser.getImageAvatar() == null || loggedInUser.getImageAvatar().isEmpty()) {
                             loggedInUser.setIMGforUser(loggedInUser);
                         }
-                        
-                    	showCustomAlert.showCustomAlert("Welcome, Gamer", "Login Successful! You are now Online.");
-                    	Main.CurrentUser = loggedInUser;
-                    	Stage stage = (Stage) loginUser.getScene().getWindow();
+
+                        showCustomAlert.showCustomAlert("Welcome, Gamer", "Login Successful! You are now Online.");
+                        Main.CurrentUser = loggedInUser;
+                        Stage stage = (Stage) loginUser.getScene().getWindow();
                         // Khởi tạo Menu và chạy trên Stage hiện tại
                         UnoGameMenu gameMenu = new UnoGameMenu();
                         stage.setFullScreen(true);
                         gameMenu.start(stage);
-                        
+
                     } catch (Exception e) {
                         e.printStackTrace();
                         showCustomAlert.showCustomAlert("Error", "Failed to load application.");
@@ -258,7 +312,7 @@ public class LoginController implements Initializable {
     }
 
     // --- HÀM TIỆN ÍCH ---
-    
+
     // Bật/Tắt lớp loading và vô hiệu hóa các nút bấm
     private void setLoading(boolean isLoading) {
         loadingOverlay.setVisible(isLoading);

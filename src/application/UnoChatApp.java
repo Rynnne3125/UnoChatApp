@@ -86,16 +86,16 @@ public class UnoChatApp extends Application {
     public static void setTargetFriend(String name) {
         targetFriendName = name;
     }
-    
+
     // Server & Connection
-    private static VirtualHost activeVirtualHost; 
-    private PeerConnection connectionToServer; 
-    
+    private static VirtualHost activeVirtualHost;
+    private PeerConnection connectionToServer;
+
     // DATA
     private final String DATA_FILE = "uno_groups.dat";
     private final String HISTORY_DIR = "uno_chat_history/";
     private ObservableList<GroupData> savedGroups = FXCollections.observableArrayList();
-    private String currentActiveGroupName = ""; 
+    private String currentActiveGroupName = "";
 
     // UI COMPONENTS
     private Stage primaryStage;
@@ -107,35 +107,35 @@ public class UnoChatApp extends Application {
         launch(args);
     }
 
-    
+
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
-        
+
         // 1. Xử lý dữ liệu User
         if (Main.CurrentUser != null) {
             this.username = Main.CurrentUser.getUsername();
         } else {
             if (username == null) username = "Player_" + new Random().nextInt(999);
         }
-        
-        myLanIP = getRealLanIP(); 
-        
+
+        myLanIP = getRealLanIP();
+
         new File(HISTORY_DIR).mkdirs();
-        loadGroupData(); 
-        
+        loadGroupData();
+
         primaryStage.setTitle("UNO Connect - " + username);
 
         // 2. --- QUAN TRỌNG: SETUP GIAO DIỆN TRƯỚC ---
-        setupMainMenu(); 
-        
+        setupMainMenu();
+
         // 3. Hiển thị Stage
         primaryStage.show();
-        
+
         // 4. --- QUAN TRỌNG: SET FULLSCREEN SAU CÙNG ---
         // Phải gọi sau khi đã có Scene và sau khi show() (hoặc ngay trước show)
         // nhưng bắt buộc phải SAU setupMainMenu()
-        primaryStage.setFullScreen(true); 
+        primaryStage.setFullScreen(true);
 
         // 5. Logic Direct Message
         if (targetFriendName != null) {
@@ -154,45 +154,45 @@ public class UnoChatApp extends Application {
                 GroupData finalGroup = existingGroup;
                 Platform.runLater(() -> handleRejoinGroup(finalGroup));
             } else {
-                String friend = targetFriendName; 
+                String friend = targetFriendName;
                 Platform.runLater(() -> showCreateGroupDialogDM(friend));
             }
-            targetFriendName = null; 
+            targetFriendName = null;
         }
     }
     private void showCreateGroupDialogDM(String friendName) {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Chat Riêng");
         dialog.setHeaderText("Tạo phòng chat với " + friendName);
-        
+
         ButtonType createType = new ButtonType("Tạo Phòng", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
-        
+
         // Tự động đặt tên phòng
         TextField nameField = new TextField("DM-" + username + "-" + friendName);
         TextField portField = new TextField("6000"); // Port khác mặc định chút
-        
+
         grid.add(new Label("Tên Phòng:"), 0, 0); grid.add(nameField, 1, 0);
         grid.add(new Label("Cổng (Port):"), 0, 1); grid.add(portField, 1, 1);
-        
+
         dialog.getDialogPane().setContent(grid);
         dialog.setResultConverter(b -> b == createType ? new String[]{nameField.getText(), portField.getText()} : null);
 
         dialog.showAndWait().ifPresent(result -> {
             // Reset target sau khi xử lý xong
-            targetFriendName = null; 
-            try { 
-                startVirtualHostAndConnect(result[0], Integer.parseInt(result[1])); 
-            } catch (Exception e) { 
-                showAlert("Lỗi tạo phòng!"); 
+            targetFriendName = null;
+            try {
+                startVirtualHostAndConnect(result[0], Integer.parseInt(result[1]));
+            } catch (Exception e) {
+                showAlert("Lỗi tạo phòng!");
             }
         });
     }
 
-    
+
     @Override
     public void stop() {
         if (activeVirtualHost != null) activeVirtualHost.stop();
@@ -204,12 +204,12 @@ public class UnoChatApp extends Application {
     // =================================================================
     private void setupMainMenu() {
         StackPane root = new StackPane();
-        
+
         // Background Gradient
         root.setBackground(new Background(new BackgroundFill(
-            new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web("#2c3e50")), new Stop(1, Color.web("#000000"))),
-            CornerRadii.EMPTY, Insets.EMPTY)));
+                new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                        new Stop(0, Color.web("#2c3e50")), new Stop(1, Color.web("#000000"))),
+                CornerRadii.EMPTY, Insets.EMPTY)));
 
         // --- THÊM HIỆU ỨNG BÀI BAY CHO MENU ---
         root.getChildren().add(createFloatingCards());
@@ -221,15 +221,15 @@ public class UnoChatApp extends Application {
 
         // Header
         HBox headerCard = createHeaderCard();
-        
+
         // Action Buttons
         HBox actions = new HBox(15);
         actions.setAlignment(Pos.CENTER);
-        
+
         Button btnBackMenu = createStyledButton("VỀ MENU", UNO_RED, "🏠");
         btnBackMenu.setPrefWidth(150);
         btnBackMenu.setOnAction(e -> returnToGameMenu());
-        
+
         Button btnCreate = createStyledButton("TẠO PHÒNG", UNO_GREEN, "➕");
         btnCreate.setPrefWidth(150);
         btnCreate.setOnAction(e -> showCreateGroupDialog());
@@ -237,7 +237,7 @@ public class UnoChatApp extends Application {
         Button btnJoin = createStyledButton("NHẬP IP", UNO_BLUE, "🔗");
         btnJoin.setPrefWidth(150);
         btnJoin.setOnAction(e -> showJoinDialog());
-        
+
         actions.getChildren().addAll(btnBackMenu, btnCreate, btnJoin);
 
         // List Rooms
@@ -261,13 +261,13 @@ public class UnoChatApp extends Application {
         });
 
         mainLayout.getChildren().addAll(headerCard, actions, lblList, listContainer);
-        
+
         // Bọc mainLayout trong kính mờ để dễ nhìn hơn trên nền động
         StackPane glassWrapper = new StackPane(mainLayout);
         glassWrapper.setStyle("-fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 0;");
 
         root.getChildren().add(glassWrapper);
-        
+
         mainScene = new Scene(root, 600, 750);
         primaryStage.setScene(mainScene);
     }
@@ -280,15 +280,15 @@ public class UnoChatApp extends Application {
 
         // 1. Background nền tối (Gradient) thay vì màu xám
         root.setBackground(new Background(new BackgroundFill(
-            new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
-                new Stop(0, Color.web("#1a1a1a")), new Stop(1, Color.web("#2c3e50"))),
-            CornerRadii.EMPTY, Insets.EMPTY)));
+                new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                        new Stop(0, Color.web("#1a1a1a")), new Stop(1, Color.web("#2c3e50"))),
+                CornerRadii.EMPTY, Insets.EMPTY)));
 
         // 2. Thêm hiệu ứng bài bay (Nằm dưới cùng)
         root.getChildren().add(createFloatingCards());
 
         BorderPane layout = new BorderPane();
-        
+
         // Header Bar (Glassmorphism)
         HBox header = new HBox(15);
         header.setPadding(new Insets(10, 20, 10, 20));
@@ -308,7 +308,7 @@ public class UnoChatApp extends Application {
         Label roomName = new Label(groupName);
         roomName.setFont(Font.font("System", FontWeight.BOLD, 18));
         roomName.setTextFill(Color.WHITE);
-        
+
         Label status = new Label(connectedIP.equals("127.0.0.1") ? "Đang làm Host (Local)" : "Kết nối tới: " + connectedIP);
         status.setFont(Font.font("System", 11));
         status.setTextFill(Color.web("#E0E0E0"));
@@ -320,16 +320,16 @@ public class UnoChatApp extends Application {
         // Message Area
         msgBox = new VBox(15);
         msgBox.setPadding(new Insets(20));
-        
+
         ScrollPane scroll = new ScrollPane(msgBox);
         scroll.setFitToWidth(true);
         // QUAN TRỌNG: Làm trong suốt ScrollPane để thấy background phía sau
         scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-viewport-border: transparent;");
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         msgBox.heightProperty().addListener((o, old, val) -> scroll.setVvalue(1.0));
-        
+
         layout.setCenter(scroll);
-        
+
         loadChatHistory(groupName);
 
         // Input Area (Glassmorphism)
@@ -346,7 +346,7 @@ public class UnoChatApp extends Application {
 
         Button sendBtn = new Button("➤");
         sendBtn.setStyle("-fx-background-color: " + toHex(UNO_GREEN) + "; -fx-text-fill: white; -fx-background-radius: 50; -fx-min-width: 45px; -fx-min-height: 45px; -fx-font-size: 18px; -fx-cursor: hand;");
-        
+
         Runnable sendAction = () -> {
             String text = input.getText().trim();
             if (!text.isEmpty()) {
@@ -357,7 +357,7 @@ public class UnoChatApp extends Application {
         };
         sendBtn.setOnAction(e -> sendAction.run());
         input.setOnAction(e -> sendAction.run());
-        
+
         inputArea.getChildren().addAll(input, sendBtn);
         layout.setBottom(inputArea);
 
@@ -371,8 +371,8 @@ public class UnoChatApp extends Application {
     private Pane createFloatingCards() {
         Pane pane = new Pane();
         // Cho phép click xuyên qua pane này để bấm được nút bên dưới nếu cần
-        pane.setPickOnBounds(false); 
-        
+        pane.setPickOnBounds(false);
+
         Random rand = new Random();
         Color[] colors = {UNO_RED, UNO_BLUE, UNO_GREEN, UNO_YELLOW};
 
@@ -383,19 +383,19 @@ public class UnoChatApp extends Application {
             card.setFill(colors[rand.nextInt(colors.length)]);
             card.setStroke(Color.WHITE);
             card.setStrokeWidth(2);
-            
+
             // Hình tròn giữa lá bài
             Circle c = new Circle(15, Color.WHITE);
             c.setCenterX(25); c.setCenterY(37.5);
-            
+
             Pane cardGroup = new Pane(card, c);
-            
+
             // Vị trí ngẫu nhiên
             cardGroup.setLayoutX(rand.nextInt(600)); // Theo chiều rộng scene
             cardGroup.setLayoutY(rand.nextInt(750)); // Theo chiều cao scene
             cardGroup.setOpacity(0.15); // Rất mờ để không rối mắt khi đọc tin nhắn
             cardGroup.setRotate(rand.nextInt(360));
-            
+
             // Hiệu ứng mờ ảo (Blur)
             cardGroup.setEffect(new GaussianBlur(3));
 
@@ -412,7 +412,7 @@ public class UnoChatApp extends Application {
             rt.setByAngle(360);
             rt.setCycleCount(Animation.INDEFINITE);
             rt.play();
-            
+
             // 3. Animation Phóng to/nhỏ (Scale)
             ScaleTransition st = new ScaleTransition(Duration.seconds(5 + rand.nextInt(5)), cardGroup);
             st.setByX(0.2); st.setByY(0.2);
@@ -431,7 +431,7 @@ public class UnoChatApp extends Application {
 
     private void addMessageBubble(String text, boolean isMe, String senderName) {
         VBox container = new VBox(5);
-        
+
         if (!isMe) {
             Label nameLbl = new Label(senderName);
             nameLbl.setFont(Font.font("System", FontWeight.BOLD, 11));
@@ -447,13 +447,13 @@ public class UnoChatApp extends Application {
         msgLbl.setMaxWidth(300);
         msgLbl.setPadding(new Insets(12, 16, 12, 16));
         msgLbl.setFont(Font.font("System", 14));
-        
+
         DropShadow ds = new DropShadow();
         ds.setColor(Color.rgb(0,0,0,0.3));
         ds.setOffsetY(2);
         msgLbl.setEffect(ds);
 
-        if (isMe) { 
+        if (isMe) {
             msgLbl.setStyle("-fx-background-color: linear-gradient(to bottom right, " + toHex(UNO_GREEN) + ", " + toHex(UNO_GREEN.brighter()) + "); -fx-background-radius: 18 18 4 18;");
             msgLbl.setTextFill(Color.WHITE);
         } else {
@@ -462,18 +462,18 @@ public class UnoChatApp extends Application {
         }
 
         container.getChildren().add(msgLbl);
-        
+
         HBox alignBox = new HBox();
         alignBox.setAlignment(isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
         alignBox.getChildren().add(container);
-        
+
         ScaleTransition st = new ScaleTransition(Duration.millis(200), msgLbl);
         st.setFromX(0); st.setFromY(0); st.setToX(1); st.setToY(1);
         st.play();
 
         msgBox.getChildren().add(alignBox);
     }
-    
+
     private void addSystemMessage(String text) {
         Label lbl = new Label(text);
         // System message nền kính mờ
@@ -490,18 +490,18 @@ public class UnoChatApp extends Application {
         btn.setPrefHeight(45);
         btn.setFont(Font.font("System", FontWeight.BOLD, 14));
         btn.setTextFill(Color.WHITE);
-        
+
         String hex = toHex(color);
         String styleNormal = "-fx-background-color: " + hex + "; -fx-background-radius: 25; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 3);";
         String styleHover = "-fx-background-color: " + toHex(color.brighter()) + "; -fx-background-radius: 25; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 5);";
-        
+
         btn.setStyle(styleNormal);
         btn.setOnMouseEntered(e -> btn.setStyle(styleHover));
         btn.setOnMouseExited(e -> btn.setStyle(styleNormal));
-        
+
         return btn;
     }
-    
+
     private HBox createHeaderCard() {
         HBox header = new HBox(15);
         header.setPadding(new Insets(20));
@@ -518,7 +518,7 @@ public class UnoChatApp extends Application {
         Label nameLbl = new Label("Xin chào, " + username);
         nameLbl.setFont(Font.font("System", FontWeight.BOLD, 18));
         nameLbl.setTextFill(Color.WHITE);
-        
+
         Label ipLbl = new Label("IP Của Bạn: " + myLanIP);
         ipLbl.setStyle("-fx-background-color: rgba(0,0,0,0.2); -fx-padding: 3 8 3 8; -fx-background-radius: 10;");
         ipLbl.setTextFill(Color.WHITE);
@@ -536,7 +536,7 @@ public class UnoChatApp extends Application {
     private void processIncomingMessage(String line) {
         Platform.runLater(() -> {
             if (line.startsWith("CHAT:")) {
-                String[] parts = line.split(":", 3); 
+                String[] parts = line.split(":", 3);
                 if (parts.length == 3) {
                     String sender = parts[1];
                     String content = parts[2];
@@ -551,7 +551,7 @@ public class UnoChatApp extends Application {
             }
         });
     }
-    
+
     private void showCreateGroupDialog() {
         Dialog<String[]> dialog = new Dialog<>();
         dialog.setTitle("Tạo Phòng Mới");
@@ -561,14 +561,14 @@ public class UnoChatApp extends Application {
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
         TextField nameField = new TextField("Phòng của " + username);
-        TextField portField = new TextField("5000"); 
+        TextField portField = new TextField("5000");
         grid.add(new Label("Tên Phòng:"), 0, 0); grid.add(nameField, 1, 0);
         grid.add(new Label("Cổng (Port):"), 0, 1); grid.add(portField, 1, 1);
         dialog.getDialogPane().setContent(grid);
         dialog.setResultConverter(b -> b == createType ? new String[]{nameField.getText(), portField.getText()} : null);
 
         dialog.showAndWait().ifPresent(result -> {
-            try { startVirtualHostAndConnect(result[0], Integer.parseInt(result[1])); } 
+            try { startVirtualHostAndConnect(result[0], Integer.parseInt(result[1])); }
             catch (Exception e) { showAlert("Lỗi nhập liệu!"); }
         });
     }
@@ -613,8 +613,8 @@ public class UnoChatApp extends Application {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                out.println(username); 
-                String realGroupName = in.readLine(); 
+                out.println(username);
+                String realGroupName = in.readLine();
                 currentActiveGroupName = realGroupName;
                 String saveIP = (ip.equals("127.0.0.1")) ? myLanIP : ip;
 
@@ -699,10 +699,10 @@ public class UnoChatApp extends Application {
 
     private void returnToGameMenu() {
         try {
-            stop(); 
-            UnoGameMenu gameMenu = new UnoGameMenu(); 
+            stop();
+            UnoGameMenu gameMenu = new UnoGameMenu();
             primaryStage.setFullScreen(true);
-            gameMenu.start(primaryStage); 
+            gameMenu.start(primaryStage);
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Không thể quay về Menu (Kiểm tra file UnoGameMenu.java)");
@@ -714,7 +714,7 @@ public class UnoChatApp extends Application {
         String groupName; String hostIP; int port; LocalDateTime lastAccess;
         public GroupData(String n, String i, int p, LocalDateTime t) { groupName = n; hostIP = i; port = p; lastAccess = t; }
     }
-    
+
     private class GroupListCell extends ListCell<GroupData> {
         @Override
         protected void updateItem(GroupData item, boolean empty) {
@@ -726,28 +726,28 @@ public class UnoChatApp extends Application {
                 HBox root = new HBox(15);
                 root.setAlignment(Pos.CENTER_LEFT);
                 root.setPadding(new Insets(10));
-                
+
                 Rectangle cardIcon = new Rectangle(40, 56);
                 cardIcon.setArcWidth(8); cardIcon.setArcHeight(8);
-                cardIcon.setFill(UNO_RED); 
+                cardIcon.setFill(UNO_RED);
                 cardIcon.setStroke(Color.WHITE); cardIcon.setStrokeWidth(2);
-                
+
                 StackPane iconStack = new StackPane(cardIcon, new Label("R") {{ setTextFill(Color.WHITE); setFont(Font.font("Arial", FontWeight.BOLD, 20)); }});
-                
+
                 VBox info = new VBox(5);
                 Label name = new Label(item.groupName);
                 name.setFont(Font.font("System", FontWeight.BOLD, 16));
                 name.setTextFill(Color.WHITE);
-                
+
                 Label detail = new Label("Host: " + item.hostIP + ":" + item.port);
                 detail.setFont(Font.font("System", 12));
                 detail.setTextFill(Color.LIGHTGRAY);
-                
+
                 info.getChildren().addAll(name, detail);
                 root.getChildren().addAll(iconStack, info);
-                
+
                 root.setStyle("-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);");
-                
+
                 setGraphic(root);
                 setStyle("-fx-background-color: transparent; -fx-padding: 5;");
             }
