@@ -250,7 +250,7 @@ public class UnoLobbyScreen extends Application {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String line = in.readLine();
-            String gName = "Unknown", gAvatar = IMG_BOT_TEEMO;
+            String gName = "Unknown", gAvatar = IMG_BOT_AHRI;
 
             if (line != null && line.startsWith("LOGIN:")) {
                 String[] parts = line.split(":", 3);
@@ -419,13 +419,13 @@ public class UnoLobbyScreen extends Application {
             if (isBotActive) {
                 btn.setText("BOT");
                 lbl.setText(isLeft ? "Bot Ahri" : "Bot Teemo");
-                view.setImage(new Image(isLeft ? IMG_BOT_AHRI : IMG_BOT_TEEMO));
+                view.setImage(new Image(isLeft ? IMG_BOT_TEEMO : IMG_BOT_AHRI));
                 view.setOpacity(1.0);
                 styleToggleButton(btn, true);
             } else {
                 btn.setText("EMPTY");
                 lbl.setText("Trống");
-                view.setImage(new Image(isLeft ? IMG_BOT_AHRI : IMG_BOT_TEEMO)); // Vẫn hiện ảnh nhưng mờ
+                view.setImage(new Image(isLeft ? IMG_BOT_TEEMO : IMG_BOT_AHRI)); // Vẫn hiện ảnh nhưng mờ
                 view.setOpacity(0.3);
                 styleToggleButton(btn, false);
             }

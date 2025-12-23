@@ -152,7 +152,7 @@ public class UnoGameMenu extends Application {
                 }
                 Scene scene = new Scene(root);
                 primaryStage.setScene(scene);
-                primaryStage.setFullScreen(true);
+                
             } catch (IOException ex) { ex.printStackTrace(); }
         });
         ft.play();
