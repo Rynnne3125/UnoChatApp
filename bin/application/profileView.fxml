@@ -55,10 +55,18 @@
                   </effect>
                </Circle>
                <!-- Level Badge -->
-               <StackPane alignment="CENTER" translateY="55">
-                   <Rectangle arcHeight="5" arcWidth="5" fill="#091428" height="25" stroke="#c8aa6e" strokeWidth="1" width="40" />
-                   <Label fx:id="levelLabel" style="-fx-font-weight: bold;" text="  Gamer  " textFill="#f0e6d2" />
-               </StackPane>
+               <StackPane onMouseClicked="#handleAvatarClick" style="-fx-cursor: hand;">
+				   <Circle fx:id="avatarCircle" fill="#1f93ff" radius="60.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="2.0" />
+				   <Circle fill="TRANSPARENT" radius="68.0" stroke="#c8aa6e" strokeType="INSIDE" strokeWidth="4.0">
+				      <effect>
+				         <DropShadow color="#c8aa6e" radius="10" spread="0.2" />
+				      </effect>
+				   </Circle>
+				   <StackPane alignment="CENTER" translateY="55">
+				       <Rectangle arcHeight="5" arcWidth="5" fill="#091428" height="25" stroke="#c8aa6e" strokeWidth="1" width="40" />
+				       <Label fx:id="levelLabel" style="-fx-font-weight: bold;" text="  Gamer  " textFill="#f0e6d2" />
+				   </StackPane>
+				</StackPane>
             </StackPane>
 
             <!-- Text Info -->

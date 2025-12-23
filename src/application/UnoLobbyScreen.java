@@ -33,13 +33,14 @@ import java.util.Optional;
 public class UnoLobbyScreen extends Application {
 
     // --- RESOURCES ---
+	private static final String IMG_USER = Main.CurrentUser.getImageAvatar();
     private static final String IMG_BOT_AHRI = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Ahri.png";
     private static final String IMG_BOT_TEEMO = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Teemo.png";
     private static final String IMG_YASUO = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Yasuo.png";
     private static final String IMG_LEE = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/LeeSin.png";
     private static final String IMG_JINX = "https://ddragon.leagueoflegends.com/cdn/13.24.1/img/champion/Jinx.png";
 
-    private static final String[] PLAYER_AVATARS = { IMG_YASUO, IMG_LEE, IMG_JINX };
+    private static final String[] PLAYER_AVATARS = { IMG_USER, IMG_YASUO, IMG_LEE, IMG_JINX };
     private int currentAvatarIndex = 0;
 
     private static final String BG_COLOR = "#091428";
@@ -75,7 +76,10 @@ public class UnoLobbyScreen extends Application {
 
     // STATE
     private String currentHostName = "Host";
-    private String currentHostAvatar = IMG_YASUO;
+    private String currentHostAvatar =
+            (IMG_USER == null || IMG_USER.isBlank())
+            ? IMG_YASUO
+            : IMG_USER;
     private String currentGuest1Name = null;
     private String currentGuest1Avatar = null;
     private String currentGuest2Name = null;
@@ -118,7 +122,7 @@ public class UnoLobbyScreen extends Application {
 
         startBtn = new Button("VÀO TRẬN");
         styleButton(startBtn, 200, GOLD_COLOR);
-        
+        startBtn.setDisable(true);
         startBtn.setOnAction(e -> {
             if (isHost) {
                 isRoomLocked = true; 
@@ -194,7 +198,7 @@ public class UnoLobbyScreen extends Application {
         HBox avatarSelector = new HBox(10, btnPrevAvatar, imgStack, btnNextAvatar); avatarSelector.setAlignment(Pos.CENTER);
 
         btnHost.setOnAction(e -> startHost()); btnJoin.setOnAction(e -> showJoinDialog());
-        btnCancel.setOnAction(e -> { cleanUpNetwork(); resetLobbyUI(); });
+        btnCancel.setOnAction(e -> { cleanUpNetwork(); resetLobbyUI(); startBtn.setDisable(true); });
 
         topControls.getChildren().addAll(connectionControlsBox, hostInfoBox);
         slot.getChildren().addAll(topControls, avatarSelector, new Label("BẠN") {{ setTextFill(Color.web(GOLD_COLOR)); setFont(Font.font(18)); }});
@@ -250,7 +254,7 @@ public class UnoLobbyScreen extends Application {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             String line = in.readLine();
-            String gName = "Unknown", gAvatar = IMG_BOT_AHRI;
+            String gName = "Unknown", gAvatar = IMG_BOT_TEEMO;
 
             if (line != null && line.startsWith("LOGIN:")) {
                 String[] parts = line.split(":", 3);
@@ -418,14 +422,14 @@ public class UnoLobbyScreen extends Application {
             // Cập nhật text và hình ảnh dựa trên trạng thái Active/Inactive
             if (isBotActive) {
                 btn.setText("BOT");
-                lbl.setText(isLeft ? "Bot Ahri" : "Bot Teemo");
-                view.setImage(new Image(isLeft ? IMG_BOT_TEEMO : IMG_BOT_AHRI));
+                lbl.setText(isLeft ? "Bot Teemo" : "Bot Ahri");
+                view.setImage(new Image(isLeft ? IMG_BOT_TEEMO : IMG_BOT_AHRI ));
                 view.setOpacity(1.0);
                 styleToggleButton(btn, true);
             } else {
                 btn.setText("EMPTY");
                 lbl.setText("Trống");
-                view.setImage(new Image(isLeft ? IMG_BOT_TEEMO : IMG_BOT_AHRI)); // Vẫn hiện ảnh nhưng mờ
+                view.setImage(new Image(isLeft ? IMG_BOT_AHRI : IMG_BOT_TEEMO)); // Vẫn hiện ảnh nhưng mờ
                 view.setOpacity(0.3);
                 styleToggleButton(btn, false);
             }

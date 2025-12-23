@@ -84,6 +84,10 @@ public class User {
 		// TODO Auto-generated method stub
 		return imageAvatar;
 	}
+	public void setImageAvatar(String imageAvatar) {
+		// TODO Auto-generated method stub
+		 this.imageAvatar = imageAvatar;
+	}
 	public boolean isOnlineStatus() {
 		return onlineStatus;
 	}

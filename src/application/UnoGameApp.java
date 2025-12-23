@@ -496,13 +496,29 @@ public class UnoGameApp extends Application {
 
     private boolean checkWinCondition() {
         String winner = null;
-        if (myHand.isEmpty()) winner = playerName;
-        else if (p1Hand.isEmpty()) winner = "Player 1";
-        else if (p2Hand.isEmpty()) winner = "Player 2";
+        
+        // Kiểm tra bài của bản thân (My Index)
+        if (myHand.isEmpty()) {
+            winner = playerName; // Hoặc getProfileByIndex(myIndex).getNameSafe();
+        } 
+        // Kiểm tra bài của Player 1 (Index 1)
+        else if (p1Hand.isEmpty()) {
+            // CŨ: winner = "Player 1";
+            // MỚI: Lấy tên từ Profile của Index 1
+            winner = getProfileByIndex(1).getNameSafe(); 
+        } 
+        // Kiểm tra bài của Player 2 (Index 2)
+        else if (p2Hand.isEmpty()) {
+            // CŨ: winner = "Player 2";
+            // MỚI: Lấy tên từ Profile của Index 2
+            winner = getProfileByIndex(2).getNameSafe();
+        }
 
         if (winner != null) {
             String finalWinner = winner;
+            // Gửi thông báo thắng cho tất cả các client
             broadcast("WIN:" + finalWinner);
+            // Hiển thị màn hình thắng
             Platform.runLater(() -> showWinScreen(finalWinner + " Winner!"));
             return true; 
         }
@@ -538,7 +554,13 @@ public class UnoGameApp extends Application {
     private void broadcast(String msg) {
         if (clientWriters == null) return;
         for (int i = 0; i < clientWriters.size(); i++) {
-            if (!isPlayerBot[i + 1]) { try { clientWriters.get(i).println(msg); } catch (Exception e) {} }
+            if (!isPlayerBot[i + 1]) { 
+                try { 
+                    PrintWriter pw = clientWriters.get(i);
+                    pw.println(msg);
+                    pw.flush(); // BẮT BUỘC: Đẩy dữ liệu đi ngay lập tức
+                } catch (Exception e) {} 
+            }
         }
     }
 
@@ -547,7 +569,9 @@ public class UnoGameApp extends Application {
             StringBuilder sb = new StringBuilder("HAND:");
             for(Card c : p1Hand) sb.append(c.toStringCode()).append(",");
             clientWriters.get(0).println(sb.toString());
+            clientWriters.get(0).flush();
             clientWriters.get(0).println("COUNTS:" + myHand.size() + ":" + p2Hand.size());
+            clientWriters.get(0).flush();
             if (!discardPile.isEmpty()) clientWriters.get(0).println("TOP:" + discardPile.get(discardPile.size()-1).toStringCode());
         }
         if (clientWriters.size() > 1 && !isPlayerBot[2]) {
